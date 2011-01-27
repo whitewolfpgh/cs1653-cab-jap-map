@@ -11,27 +11,26 @@ http://www.cs.pitt.edu/~adamlee/courses/2011sp/cs1653/project/phase_2.pdf
 ----
  
 = Development Tasks =
-The majority of the core functionality needed for developing (insecure) group servers, file servers, and clients is provided for you in project2src.tgz. Your job in this phase of the project is to complete the development of this system. In particular, you must do the following:
  # Read and understand the interactions between all included components. Do not put off this task! Provided code: [http://www.cs.pitt.edu/~adamlee/courses/2011sp/cs1653/project/project2src.tgz project2src.tgz]
- # Develop an implementation of the interface described in UserToken.java. 
+ # Develop an implementation of the interface described in `UserToken.java`. 
  # Implement the connect() method in the Client.java class. Related sample code in [http://www.cs.pitt.edu/~adamlee/courses/2011sp/cs1653/project/project2src.tgz server_sample.tgz]
  # File server must be able to list the files that a particular user is allowed to see.
- # Complete the group server implementation to support all operations required by GroupClientInterface.java.  The group server implementation includes handlers for all user-related tasks (creation, deletion, etc.). However, the handlers needed to carry out group-related tasks are just stubs.
+ # Complete the group server implementation to support all operations required by `GroupClientInterface.java`.  The group server implementation includes handlers for all user-related tasks (creation, deletion, etc.). However, the handlers needed to carry out group-related tasks are just stubs.
  # Develop a user-interface capable of connecting to group and file servers. This interface should allow the human user to carry out all functionality described in previous sections of this assignment
  
 = Model =
 == Group Server ==
-The group server is entirely trustworthy. In this phase of the project, this means that the group server will behave exactly as specied in its interface (see GroupClientInterface.java).
+The group server is entirely trustworthy. In this phase of the project, this means that the group server will behave exactly as specied in its interface (see `GroupClientInterface.java`).
 
  * an administrator can create or delete users
  * any user can create groups, delete groups, and add other users to the groups that they create
  * a user can obtain a token that can be used to prove that they are members of certain groups. Once a user obtains a token from the group server, they can log into one or more le servers to upload, download or delete files.
 
 == File Servers ==
-The file servers are all entirely trusted. In this phase of the project, this means that each le server will behave exactly as specied in its interface (see FileClientInterface.java). For example, this means that you need not worry about a file server modifying a user's token, or making unauthorized use of a user's token (e.g., using the token itself or disclosing the token to another principal).
+The file servers are all entirely trusted. In this phase of the project, this means that each le server will behave exactly as specied in its interface (see `FileClientInterface.java`). For example, this means that you need not worry about a file server modifying a user's token, or making unauthorized use of a user's token (e.g., using the token itself or disclosing the token to another principal).
 
 == Clients ==
 All clients will behave in a trustworthy manner. This means that clients will not share their tokens with one another, nor will they make any attempt to modify their tokens.
 
 == Other Principals ==
-You may assume that the only principals in the system are the group server, le servers, and a single client. In particular, this means that you do not need to worry about the threats of passive attackers stealing information that is transmitted between the client and servers, or active attackers altering the data that is transmitted between the client and servers
+You may assume that the only principals in the system are the group server, file servers, and a single client. In particular, this means that you do not need to worry about the threats of passive attackers stealing information that is transmitted between the client and servers, or active attackers altering the data that is transmitted between the client and servers
