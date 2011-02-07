@@ -1,6 +1,5 @@
-import java.net.Socket;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.net.*;
 
 public abstract class Client {
 
@@ -15,7 +14,20 @@ public abstract class Client {
 		System.out.println("attempting to connect");
 
 		/* TODO: Write this method */
-		return false;
+		try
+		{
+			InetAddress addr = InetAddress.getByName(server);
+			sock = new Socket(addr, port);
+			input = new ObjectInputStream(sock.getInputStream());
+			output = new ObjectOutputStream(sock.getOutputStream());
+		}
+		catch (Exception e)
+		{
+			System.out.println("CONNECTION ERROR: " + e);
+			return false;
+		}
+		System.out.println("Connection established successfully.");
+		return true;
 	}
 
 	public boolean isConnected() {
