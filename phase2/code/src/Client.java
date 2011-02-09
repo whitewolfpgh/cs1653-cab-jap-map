@@ -1,6 +1,8 @@
 import java.net.Socket;
+import java.net.InetAddress;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
 
 public abstract class Client {
 
@@ -20,11 +22,13 @@ public abstract class Client {
 		 * -brack
 		 */
 		try {
-			sock = new Socket(server, port);
-			System.out.println("Connected to host ["+server+"] on port ["+port+"]");
+			InetAddress addr = InetAddress.getByName(server);
+			sock = new Socket(addr, port);
 
 			output = new ObjectOutputStream(sock.getOutputStream());
 			input = new ObjectInputStream(sock.getInputStream());
+
+			System.out.println("Connected to host ["+server+"] on port ["+port+"]");
 		} catch(Exception e) {
 			System.err.println("Error connecting to host ["+server+"]:["+port+"] -- "+e);
 			e.printStackTrace(System.err);
