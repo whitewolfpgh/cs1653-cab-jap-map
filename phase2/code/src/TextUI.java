@@ -7,6 +7,18 @@ public class TextUI {
 	public static final int CMD_EXIT = 0;
 	public static final int CMD_HELP = 1;
 	public static final int CMD_CUSER = 2;
+	public static final int CMD_DUSER = 3;
+	public static final int CMD_UPFILE = 4;
+	public static final int CMD_DWNFILE = 5;
+	public static final int CMD_DFILE = 6;
+	public static final int CMD_LSTFILE = 7;
+	public static final int CMD_LSTGRP = 8;
+	public static final int CMD_LSTGRPMEM = 9;
+	public static final int CMD_CGRP = 11;
+	public static final int CMD_DGRP = 12;
+	public static final int CMD_CUSERGRP = 13;
+	public static final int CMD_DUSERGRP = 14;
+	
 
 	protected HashMap<String, Integer> commandList;
 	protected GroupClient groupClient;
@@ -26,6 +38,17 @@ public class TextUI {
 			commandList.put("exit", CMD_EXIT);
 			commandList.put("help", CMD_HELP);
 			commandList.put("cuser", CMD_CUSER);
+			commandList.put("duser", CMD_DUSER);
+			commandList.put("upfile", CMD_UPFILE);
+			commandList.put("dwnfile", CMD_DWNFILE);
+			commandList.put("dfile", CMD_DFILE);
+			commandList.put("lstfile", CMD_LSTFILE);
+			commandList.put("lstgrp", CMD_LSTGRP);
+			commandList.put("lstgrpmem", CMD_LSTGRPMEM);
+			commandList.put("cgrp", CMD_CGRP);
+			commandList.put("dgrp", CMD_DGRP);
+			commandList.put("cusergrp", CMD_CUSERGRP);
+			commandList.put("dusergrp", CMD_DUSERGRP);
 
 			groupClient = new GroupClient();
 			fileClient = new FileClient();
