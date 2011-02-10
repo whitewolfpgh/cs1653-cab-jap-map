@@ -133,6 +133,14 @@ public class TextUI {
 					createGroup(cmdArgs);
 				break;
 
+				/* user wants to delete a group. 
+				 *
+				 * param: group name (String)
+				 */
+				case CMD_DGRP:
+					deleteGroup(cmdArgs);
+				break;
+
 				/* user wants to authenticate w/group server (get token) 
 				 *
 				 * param: user name (String)
@@ -178,6 +186,22 @@ public class TextUI {
 				System.out.println("Group created? ["+result+"]");
 			} else {
 				System.out.println("Group not created, '"+groupName+"'.  Group Server not available");
+			}
+
+		}
+	}
+	
+	public void deleteGroup(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a group name");
+		} else {
+			String groupName = args[0];
+		
+			if(ensureGroupConnection()) {
+				boolean result = groupClient.deleteGroup(groupName, loggedInToken);
+				System.out.println("Group deleted? ["+result+"]");
+			} else {
+				System.out.println("Group not deleted, '"+groupName+"'.  Group Server not available");
 			}
 
 		}
