@@ -36,6 +36,7 @@ public class GroupServer extends Server {
 	
 	public void start() {
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
+		System.out.println("Starting Group Server...");
 		
 		String userFile = "UserList.bin";
 		String groupFile = "GroupList.bin";
@@ -120,6 +121,8 @@ public class GroupServer extends Server {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+
+		System.out.println("Group Server started successfully.");
 
 	}
 	
