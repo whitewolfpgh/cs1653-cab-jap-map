@@ -1,8 +1,6 @@
 import java.net.Socket;
-import java.net.InetAddress;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-
 
 public abstract class Client {
 
@@ -16,27 +14,7 @@ public abstract class Client {
 	public boolean connect(final String server, final int port) {
 		System.out.println("attempting to connect");
 
-		/* connect to the server, set up the server i/o and return true
-		 * if there's an exception, print it out and return false
-		 *
-		 * -brack
-		 */
-		try {
-			InetAddress addr = InetAddress.getByName(server);
-			sock = new Socket(addr, port);
-
-			output = new ObjectOutputStream(sock.getOutputStream());
-			input = new ObjectInputStream(sock.getInputStream());
-
-			System.out.println("Connected to host ["+server+"] on port ["+port+"]");
-		} catch(Exception e) {
-			System.err.println("Error connecting to host ["+server+"]:["+port+"] -- "+e);
-			e.printStackTrace(System.err);
-
-			return false;
-		}
-
-		return true;
+		/* TODO: Write this method */
 
 	}
 

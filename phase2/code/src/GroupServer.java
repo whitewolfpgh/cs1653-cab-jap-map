@@ -14,17 +14,11 @@ import java.net.Socket;
 import java.io.*;
 import java.util.*;
 
-/* TODO: test this class
- *
- * -brack
- */
-
 
 public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8765;
 	public UserList userList;
-	public GroupList groupList;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
