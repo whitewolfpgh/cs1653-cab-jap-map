@@ -106,7 +106,7 @@ class ShutDownListenerFS implements Runnable
 {
 	public void run()
 	{
-		System.out.println("Shutting down server");
+		System.out.println("FileServer: Shutting down server");
 		ObjectOutputStream outStream;
 
 		try
@@ -147,7 +147,7 @@ class AutoSaveFS extends Thread
 			}
 			catch(Exception e)
 			{
-				System.out.println("Autosave Interrupted");
+				System.out.println("FileServer: Autosave Interrupted");
 			}
 		}while(true);
 	}
