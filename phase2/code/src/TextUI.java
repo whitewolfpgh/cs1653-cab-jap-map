@@ -132,6 +132,32 @@ public class TextUI {
 				case CMD_CGRP:
 					createGroup(cmdArgs);
 				break;
+				
+				/* user wants to list files
+				 *
+				 * param: none
+				 */
+				case CMD_LSTFILE:
+					listFiles(cmdArgs);
+				break;
+				
+				/* user wants to list groups
+				 *
+				 * param: none
+				 *
+				case CMD_LSTGRP:
+					listGroups(cmdArgs);
+				break;
+				*/
+				
+				/* user wants to list group members
+				 *
+				 * param: group name (String)
+				 */
+				case CMD_LSTGRPMEM:
+					listGroupMems(cmdArgs);
+				break;
+				
 
 				/* user wants to delete a group. 
 				 *
@@ -239,6 +265,49 @@ public class TextUI {
 			} else {
 				System.out.println("Unable to get token for user '"+userName+"'.  Group Server not available");
 			}
+		}
+	}
+	
+	public void listFiles(String... args) {
+		if(ensureGroupConnection()) {
+			List<String> result = fileClient.listFiles(loggedInToken);
+			for (int i = 0; i < result.size(); i++)
+			{
+				System.out.println(result.get(i));
+			}
+		} else {
+			System.out.println("Could not retrieve file list. File Server not available");
+		}
+	}
+	
+	//public void listGroups(String... args) {
+		if(ensureGroupConnection()) {
+			List<String> result = fileClient.listFiles(loggedInToken);
+			for (int i = 0; i < result.size(); i++)
+			{
+				System.out.println(result.get(i));
+			}
+		} else {
+			System.out.println("Could not retrieve group list. Group Server not available");
+		}
+	}
+	
+	public void listGroupMems(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a group name");
+		} else {
+			String groupName = args[0];
+		
+			if(ensureGroupConnection()) {
+				List<String> result = groupClient.listMembers(groupName, loggedInToken);
+				for (int i = 0; i < result.size(); i++)
+				{
+					System.out.println(result.get(i));
+				}
+			} else {
+				System.out.println("Could not retrieve member list for group '"+groupName+"'.  Group Server not available");
+			}
+
 		}
 	}
 
