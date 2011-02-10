@@ -1,10 +1,11 @@
 import java.util.List;
+import java.io.Serializable;
 
 /**
  * Used throughout the system for user-related communications
  *
  */
-public class Token implements UserToken
+public class Token implements UserToken, Serializable
 {
 	String mIssuer; // identifies the group server that created the token
 	String mSubject; // name of the subject of the token
