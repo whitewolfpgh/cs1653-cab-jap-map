@@ -38,6 +38,7 @@ public class GroupServer extends Server {
 		// Overwrote server.start() because if no user file exists, initial admin account needs to be created
 		
 		String userFile = "UserList.bin";
+		String groupFile = "GroupList.bin";
 		Scanner console = new Scanner(System.in);
 		ObjectInputStream userStream;
 		ObjectInputStream groupStream;
@@ -46,34 +47,50 @@ public class GroupServer extends Server {
 		Runtime runtime = Runtime.getRuntime();
 		runtime.addShutdownHook(new ShutDownListener(this));
 		
-		//Open user file to get user list
+		//Open user & group file to get user & group list
 		try
 		{
 			FileInputStream fis = new FileInputStream(userFile);
 			userStream = new ObjectInputStream(fis);
 			userList = (UserList)userStream.readObject();
+
+			FileInputStream fisGroup = new FileInputStream(groupFile);
+			groupStream = new ObjectInputStream(fisGroup);
+			groupList = (GroupList)groupStream.readObject();
 		}
 		catch(FileNotFoundException e)
 		{
-			System.out.println("UserList File Does Not Exist. Creating UserList...");
+			System.out.println("UserList/GroupList File Does Not Exist. Creating UserList & GroupList...");
 			System.out.println("No users currently exist. Your account will be the administrator.");
 			System.out.print("Enter your username: ");
 			String username = console.next();
-			
+
+			/* don't let them create a blank user!! */
+			if(username == null && username.equals("")) {
+				System.out.println("EMPTY USER NAME!");
+				System.exit(-1);
+			}
+
+			/* create a new group list, create ADMIN group. also assigns user as owner and member */
+			groupList = new GroupList();
+			groupList.addGroup("ADMIN", username);
+
 			//Create a new list, add current user to the ADMIN group. They now own the ADMIN group.
 			userList = new UserList();
 			userList.addUser(username);
 			userList.addGroup(username, "ADMIN");
 			userList.addOwnership(username, "ADMIN");
+
+			System.out.println("Group ADMIN created, added user '"+username+"'");
 		}
 		catch(IOException e)
 		{
-			System.out.println("Error reading from UserList file");
+			System.out.println("Error reading from UserList/GroupList file");
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e)
 		{
-			System.out.println("Error reading from UserList file");
+			System.out.println("Error reading from UserList/GroupList file");
 			System.exit(-1);
 		}
 		
@@ -119,7 +136,7 @@ class ShutDownListener extends Thread
 	
 	public void run()
 	{
-		System.out.println("Shutting down server");
+		System.out.println("GroupServer: Shutting down server");
 		ObjectOutputStream outStream;
 		try
 		{
@@ -128,7 +145,18 @@ class ShutDownListener extends Thread
 		}
 		catch(Exception e)
 		{
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Error in shut down writing UserList.bin: " + e.getMessage());
+			e.printStackTrace(System.err);
+		}
+
+		try
+		{
+			outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+			outStream.writeObject(my_gs.groupList);
+		}
+		catch(Exception e)
+		{
+			System.err.println("Error in shut down writing GroupList.bin: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
 	}
@@ -158,13 +186,24 @@ class AutoSave extends Thread
 				}
 				catch(Exception e)
 				{
-					System.err.println("Error: " + e.getMessage());
+					System.err.println("Error auto-saving UserList.bin: " + e.getMessage());
+					e.printStackTrace(System.err);
+				}
+
+				try
+				{
+					outStream = new ObjectOutputStream(new FileOutputStream("GroupList.bin"));
+					outStream.writeObject(my_gs.groupList);
+				}
+				catch(Exception e)
+				{
+					System.err.println("Error auto-saving GroupList.bin: " + e.getMessage());
 					e.printStackTrace(System.err);
 				}
 			}
 			catch(Exception e)
 			{
-				System.out.println("Autosave Interrupted");
+				System.out.println("GroupServer: Autosave Interrupted");
 			}
 		}while(true);
 	}

@@ -18,6 +18,7 @@ import java.util.*;
 			Group newGroup = new Group();
 			newGroup.addCreator(creator);
 			groupList.put(groupName, newGroup);
+			addGroupMember(groupName, creator);
 		}
 	
 		// note: make sure at a higher level admin/creator is the one deleting!!
