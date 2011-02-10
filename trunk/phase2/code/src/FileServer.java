@@ -24,6 +24,7 @@ public class FileServer extends Server {
 	}
 	
 	public void start() {
+		System.out.println("Starting File Server...");
 		String fileFile = "FileList.bin";
 		ObjectInputStream fileStream;
 		
@@ -98,6 +99,8 @@ public class FileServer extends Server {
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
 		}
+
+		System.out.println("File server started successfully.");
 	}
 }
 

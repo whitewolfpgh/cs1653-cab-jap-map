@@ -134,6 +134,8 @@ public class GroupThread extends Thread
 							&& message.getObjContents().get(1) != null) {
 							String groupName = (String)message.getObjContents().get(0); //Extract the group name
 							UserToken creatorToken = (UserToken)message.getObjContents().get(1); //Extract the token
+							boolean hasToken = (creatorToken != null) ? true : false;
+							System.out.println("DEBUG || group name ["+groupName+"] creator Token present? ["+hasToken+"]");
 							
 							if(createGroup(groupName, creatorToken)) {
 								response = new Envelope("OK"); //Success
