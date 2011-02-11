@@ -116,11 +116,12 @@ public class TextUI {
 
 			System.arraycopy(cmdLine, 1, cmdArgs, 0, cmdLine.length-1);
 
-			// DEBUG !!!
+			/* DEBUG !!!
 			System.out.println("Command received: ["+cmdLine[0]+"] and args:");
 			for(int i=0; i < cmdArgs.length; i++) {
 				System.out.println("\targ["+i+"] => ["+cmdArgs[i]+"]");
 			}
+			*/
 
 			switch(cmd) {
 
@@ -369,7 +370,7 @@ public class TextUI {
 	}
 	
 	public void listFiles(String... args) {
-		if(ensureGroupConnection()) {
+		if(ensureFileConnection()) {
 			List<String> result = fileClient.listFiles(loggedInToken);
 			for (int i = 0; i < result.size(); i++)
 			{
@@ -483,7 +484,7 @@ public class TextUI {
 			System.out.println("\tdgroup\t Delete a group. Eg: dgroup group_one"); // CMD_DGRP
 			System.out.println("\tausertogroup\t Add a user to a group. Eg: ausertogroup alice group_one"); // CMD_CUSERGRP
 			System.out.println("\tduserfromgroup\t Delete a user from a group. Eg: duserfromgroup alice group_one"); // CMD_DUSERGRP
-			System.out.println("\tuploadf\t Upload file. Eg: uploadf /path/to/file.txt \"File.Name.On.Server\""); // CMD_UPFILE
+			System.out.println("\tuploadf\t Upload file. Eg: uploadf /path/to/file.txt \"File.Name.On.Server\" ADMIN"); // CMD_UPFILE
 			System.out.println("\tdownloadf\t Download File. Eg: downloadf \"File.Name.On.Server\""); // CMD_DWNFILE
 			System.out.println("\tdeletef\t Delete file. Eg: deletef \"File.Name.On.Server\""); // CMD_DFILE
 			System.out.println("\tlfiles\t List files."); // CMD_LSTFILE

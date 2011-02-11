@@ -199,7 +199,10 @@ public class GroupThread extends Thread
 							System.out.println("DEBUG || gThread::LMEMBERS got groupName ["+groupName+"] and requester ["+requesterToken.getSubject()+"]");
 							// return the list of members
 							try {
-								ArrayList<String> members = my_gs.groupList.getGroupMembers(groupName);
+								/* XXX it's possible that this is the cuse for the incorrect list of members
+								 * 		the server reports the right amount of members
+								 */
+								List<String> members = my_gs.groupList.getGroupMembers(groupName);
 								System.out.println("DEBUG || LMEMBERS: group member count for ["+groupName+"] = "+members.size());
 								if(members.size() > 0) {
 									response = new Envelope("OK");

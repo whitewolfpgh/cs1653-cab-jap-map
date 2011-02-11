@@ -3,6 +3,7 @@
 import java.lang.Thread;
 import java.net.Socket;
 import java.util.List;
+import java.util.ArrayList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -37,6 +38,30 @@ public class FileThread extends Thread
 				if(e.getMessage().equals("LFILES"))
 				{
 				    /* TODO: Write this handler */
+
+					if(e.getObjContents().size() < 1) {
+						response = new Envelope("FAIL");
+					} else {
+						UserToken requesterToken = (UserToken)e.getObjContents().get(0);
+
+						// check for null for requesterToken!!!!
+						// this causes a hang in the UI
+						List<String> requesterGroups = requesterToken.getGroups();
+						ArrayList<ShareFile> files = FileServer.fileList.getFiles();
+						
+						List<String> fileNameList = new ArrayList<String>();
+
+						for(ShareFile f : files) {
+							if(requesterGroups.contains(f.getGroup())) {
+								// if f.getgroup is found in requesterGroups, add the file to the list
+								fileNameList.add(f.getPath());
+							}
+						}
+
+						response = new Envelope("OK");
+						response.addObject(fileNameList);
+						output.writeObject(response);
+					}
 				}
 				if(e.getMessage().equals("UPLOADF"))
 				{
