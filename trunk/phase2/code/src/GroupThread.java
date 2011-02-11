@@ -69,6 +69,7 @@ public class GroupThread extends Thread
 					if(message.getObjContents().size() < 2)
 					{
 						response = new Envelope("FAIL");
+						System.out.println("NOT ENOUGH PARAMS");
 					}
 					else
 					{
@@ -81,6 +82,7 @@ public class GroupThread extends Thread
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
+								System.out.println("DEBUG || gThread::CUSER got username ["+username+"] and requester ["+yourToken.getSubject()+"]");
 								if(createUser(username, yourToken))
 								{
 									response = new Envelope("OK"); //Success
@@ -109,6 +111,7 @@ public class GroupThread extends Thread
 								String username = (String)message.getObjContents().get(0); //Extract the username
 								UserToken yourToken = (UserToken)message.getObjContents().get(1); //Extract the token
 								
+								System.out.println("DEBUG || gThread::DUSER got username ["+username+"] and requester ["+yourToken.getSubject()+"]");
 								if(deleteUser(username, yourToken))
 								{
 									response = new Envelope("OK"); //Success
@@ -122,6 +125,16 @@ public class GroupThread extends Thread
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
 				    /* TODO:  Write this handler */
+
+					/* TODO: implement case insensitive groups, so that you can't have users create
+					 * 			malicious imposter groups.  Not as big of a deal with most monospace chars, but
+					 * 			on some systems the difference between a capital i and lowercase l look the same
+					 *
+					 * 			example: group_hello vs group_heIIo
+					 *
+					 *
+					 * 		oh, also- same goes for users.
+					 */
 
 
 					if(message.getObjContents().size() < 2) {
@@ -183,11 +196,20 @@ public class GroupThread extends Thread
 							String groupName = (String)message.getObjContents().get(0); // grab grp name
 							UserToken requesterToken = (UserToken)message.getObjContents().get(1); // grab requester token
 
+							System.out.println("DEBUG || gThread::LMEMBERS got groupName ["+groupName+"] and requester ["+requesterToken.getSubject()+"]");
 							// return the list of members
-							ArrayList<String> members = my_gs.groupList.getGroupMembers(groupName);
-							if(members.size() > 0) {
-								response = new Envelope("OK");
-								response.addObject(members);
+							try {
+								ArrayList<String> members = my_gs.groupList.getGroupMembers(groupName);
+								System.out.println("DEBUG || LMEMBERS: group member count for ["+groupName+"] = "+members.size());
+								if(members.size() > 0) {
+									response = new Envelope("OK");
+									response.addObject(members);
+								}
+							} catch(Exception e) {
+								System.out.println("DEBUG || LMEMBERS: exception- "+e);
+
+								// DEBUG
+								e.printStackTrace();
 							}
 						}
 					}
@@ -199,18 +221,21 @@ public class GroupThread extends Thread
 				{
 				    /* TODO:  Write this handler */
 
-
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
 					} else {
 						response = new Envelope("FAIL");
 
 						if(message.getObjContents().get(0) != null
-							&& message.getObjContents().get(1) != null) {
-							String groupName = (String)message.getObjContents().get(0);
-							UserToken memberToken = (UserToken)message.getObjContents().get(1);
+							&& message.getObjContents().get(1) != null
+							&& message.getObjContents().get(2) != null) {
+							String userName = (String)message.getObjContents().get(0);
+							String groupName = (String)message.getObjContents().get(1);
+							UserToken requesterToken = (UserToken)message.getObjContents().get(2);
 
-							if(addGroupMember(groupName, memberToken)) {
+							System.out.println("DEBUG || gThread::AUSERTOGROUP got groupName ["+groupName+"] userName ["+userName+"] and requester ["+requesterToken.getSubject()+"]");
+
+							if(addGroupMember(groupName, userName, requesterToken)) {
 								response = new Envelope("OK");
 							}
 						}
@@ -222,6 +247,8 @@ public class GroupThread extends Thread
 				{
 				    /* TODO:  Write this handler */
 
+					/* TODO: add logging on the server side for success & fails on commands */
+
 
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
@@ -229,11 +256,15 @@ public class GroupThread extends Thread
 						response = new Envelope("FAIL");
 
 						if(message.getObjContents().get(0) != null
-							&& message.getObjContents().get(1) != null) {
-							String groupName = (String)message.getObjContents().get(0);
-							UserToken memberToken = (UserToken)message.getObjContents().get(1);
+							&& message.getObjContents().get(1) != null
+							&& message.getObjContents().get(2) != null) {
+							String userName = (String)message.getObjContents().get(0);
+							String groupName = (String)message.getObjContents().get(1);
+							UserToken requesterToken = (UserToken)message.getObjContents().get(2);
 
-							if(removeGroupMember(groupName, memberToken)) {
+							System.out.println("DEBUG || gThread::RUSERTOGROUP got groupName ["+groupName+"] userName ["+userName+"] and requester ["+requesterToken.getSubject()+"]");
+
+							if(removeGroupMember(groupName, userName, requesterToken)) {
 								response = new Envelope("OK");
 							}
 						}
@@ -257,6 +288,16 @@ public class GroupThread extends Thread
 		{
 			System.err.println("Error: " + e.getMessage());
 			e.printStackTrace(System.err);
+
+			try {
+				final ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+				if(output != null) {
+					Envelope response = new Envelope("FAIL");
+					output.writeObject(response);
+				}
+			} catch(Exception e2) {
+				// well... no graceful failure for the client. sorry.
+			}
 		}
 	}
 	
@@ -304,23 +345,36 @@ public class GroupThread extends Thread
 		}
 	}
 
-	private boolean addGroupMember(String groupName, UserToken memberToken) {
-		String member = memberToken.getSubject();
+	private boolean addGroupMember(String groupName, String memberName, UserToken requesterToken) {
+		String requester = requesterToken.getSubject();
 
-		if(my_gs.userList.checkUser(member) && my_gs.groupList.checkGroup(groupName)) {
-			my_gs.groupList.addGroupMember(groupName, member);
-			// note: check user's group and make sure it was actually added before returning true
-			return true;
+		if(my_gs.userList.checkUser(memberName)  // user exists
+			&& my_gs.groupList.checkGroup(groupName)) { // group exists
+
+			if(my_gs.groupList.getGroupOwner(groupName).equals(requester)) { // requester is group owner
+
+				my_gs.groupList.addGroupMember(groupName, memberName);
+				System.out.println("DEBUG || addGroupMember- user ["+memberName+"] added to group ["+groupName+"]");
+				// note: check user's group and make sure it was actually added before returning true
+				return true;
+			} else {
+				System.out.println("DEBUG || addGroupMember- requester ["+requester+"] isnt the owner of ["+groupName+"]");
+				return false;
+			}
 		} else {
+			System.out.println("DEBUG || addGroupMember- user ["+memberName+"] NOT added to group ["+groupName+"]");
 			return false; // user or group doesn't exist
 		}
 	}
 
-	private boolean removeGroupMember(String groupName, UserToken memberToken) {
-		String member = memberToken.getSubject();
+	private boolean removeGroupMember(String groupName, String memberName, UserToken requesterToken) {
+		String requester = requesterToken.getSubject();
 
-		if(my_gs.userList.checkUser(member) && my_gs.groupList.checkGroup(groupName)) {
-			my_gs.groupList.removeMember(groupName, member);
+		if(my_gs.userList.checkUser(memberName)  // user exists
+			&& my_gs.groupList.checkGroup(groupName) // group exists
+			&& my_gs.groupList.getGroupOwner(groupName).equals(requester)) { // requester is group owner
+
+			my_gs.groupList.removeMember(groupName, memberName);
 			// note: check user's group and make sure it was actually removed
 			return true;
 		} else {
@@ -371,21 +425,25 @@ public class GroupThread extends Thread
 				//Does user already exist?
 				if(my_gs.userList.checkUser(username))
 				{
+					System.out.println("DEBUG || createUser- user ["+username+"] already exists");
 					return false; //User already exists
 				}
 				else
 				{
+					System.out.println("DEBUG || createUser- user ["+username+"] already exists");
 					my_gs.userList.addUser(username);
 					return true;
 				}
 			}
 			else
 			{
+				System.out.println("DEBUG || createUser- user ["+requester+"] not admin");
 				return false; //requester not an administrator
 			}
 		}
 		else
 		{
+			System.out.println("DEBUG || createUser- user ["+requester+"] doesn't exist");
 			return false; //requester does not exist
 		}
 	}

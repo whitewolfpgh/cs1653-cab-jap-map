@@ -50,6 +50,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 	 {
 		 try
 			{
+				System.out.println("WTF || createUser got "+username);//+" and req: "+token.getSubject());
 				Envelope message = null, response = null;
 				//Tell the server to create a user
 				message = new Envelope("CUSER");
