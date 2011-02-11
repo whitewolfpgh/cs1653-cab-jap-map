@@ -245,8 +245,8 @@ public class TextUI {
 			System.out.println("ERROR... Input not recognized.  Please try again.");
 
 			// DEBUG ONLY!!!
-			System.out.println("DEBUG: error occurred- "+e);
-			e.printStackTrace();
+			//System.out.println("DEBUG: error occurred- "+e);
+			//e.printStackTrace();
 		}
 	}
 

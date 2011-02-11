@@ -29,3 +29,4 @@ USAGE:
 
  run java TextUI
 
+ For help with commands, type 'help' into the TextUI prompt.
