@@ -158,7 +158,30 @@ public class TextUI {
 					listGroupMems(cmdArgs);
 				break;
 				
-
+				/* user wants to upload a file. 
+				 *
+				 * param: source name, dest name, group name (Strings)
+				 */
+				case CMD_UPFILE:
+					uploadFile(cmdArgs);
+				break;
+				
+				/* user wants to download a file. 
+				 *
+				 * param: source name, dest name (Strings)
+				 */
+				case CMD_DWNFILE:
+					downloadFile(cmdArgs);
+				break;
+				
+				/* user wants to delete a file. 
+				 *
+				 * param: file name (String)
+				 */
+				case CMD_DFILE:
+					deleteFile(cmdArgs);
+				break;
+				
 				/* user wants to delete a group. 
 				 *
 				 * param: group name (String)
@@ -280,7 +303,7 @@ public class TextUI {
 		}
 	}
 	
-	//public void listGroups(String... args) {
+	public void listGroups(String... args) {
 		if(ensureGroupConnection()) {
 			List<String> result = fileClient.listFiles(loggedInToken);
 			for (int i = 0; i < result.size(); i++)
@@ -306,6 +329,55 @@ public class TextUI {
 				}
 			} else {
 				System.out.println("Could not retrieve member list for group '"+groupName+"'.  Group Server not available");
+			}
+
+		}
+	}
+	
+	public void deleteFile(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a file name");
+		} else {
+			String fileName = args[0];
+		
+			if(ensureFileConnection()) {
+				boolean result = fileClient.delete(fileName, loggedInToken);
+				System.out.println("File deleted? [" + result + "]");
+			} else {
+				System.out.println("Could not delete file '"+fileName+"'.  File Server not available");
+			}
+
+		}
+	}
+	
+	public void uploadFile(String... args) {
+		if(args.length < 3) {
+			System.out.println("you must supply a source, destination and group name");
+		} else {
+			String sourcePath = args[0];
+			String destPath = args[1];
+			String groupName = args[2];
+			if(ensureFileConnection()) {
+				boolean result = fileClient.upload(sourcePath, destPath, groupName, loggedInToken);
+				System.out.println("File uploaded? [" + result + "]");
+			} else {
+				System.out.println("Could not upload file to'"+groupName+"'.  File Server not available");
+			}
+
+		}
+	}
+	
+	public void downloadFile(String... args) {
+		if(args.length < 2) {
+			System.out.println("you must supply a source and destination");
+		} else {
+			String sourcePath = args[0];
+			String destPath = args[1];
+			if(ensureFileConnection()) {
+				boolean result = fileClient.download(sourcePath, destPath, loggedInToken);
+				System.out.println("File downloaded? [" + result + "]");
+			} else {
+				System.out.println("Could not download file from'"+destPath+"'.  File Server not available");
 			}
 
 		}
