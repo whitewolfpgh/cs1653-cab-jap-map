@@ -46,8 +46,10 @@ import java.util.*;
 
 			/* if user is group owner, delete the group */
 			if(userName.equals(grp.getCreator())) {
+				System.out.println("DEBUG || removeMember- deleting group ["+groupName+"] b/c owner ["+userName+"] is being removed from grp");
 				deleteGroup(groupName);
 			} else {
+				System.out.println("DEBUG || removeMember- removed user ["+userName+"] from group ["+groupName+"]");
 				grp.removeMember(userName);
 			}
 		}

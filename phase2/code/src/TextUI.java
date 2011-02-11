@@ -52,7 +52,7 @@ public class TextUI {
 			// group thread commands
 			commandList.put("cuser", CMD_CUSER);
 			commandList.put("duser", CMD_DUSER);
-			commandList.put("lgroups", CMD_LSTGRP);
+			//commandList.put("lgroups", CMD_LSTGRP);
 			commandList.put("lmembers", CMD_LSTGRPMEM);
 			commandList.put("cgroup", CMD_CGRP);
 			commandList.put("dgroup", CMD_DGRP);
@@ -115,6 +115,13 @@ public class TextUI {
 			cmd = commandList.get(cmdLine[0]);
 
 			System.arraycopy(cmdLine, 1, cmdArgs, 0, cmdLine.length-1);
+
+			// DEBUG !!!
+			System.out.println("Command received: ["+cmdLine[0]+"] and args:");
+			for(int i=0; i < cmdArgs.length; i++) {
+				System.out.println("\targ["+i+"] => ["+cmdArgs[i]+"]");
+			}
+
 			switch(cmd) {
 
 				/* create a user 
@@ -123,6 +130,10 @@ public class TextUI {
 				 */
 				case CMD_CUSER:
 					createUser(cmdArgs);
+				break;
+
+				case CMD_DUSER:
+					deleteUser(cmdArgs);
 				break;
 
 				/* user wants to create a group. 
@@ -190,6 +201,16 @@ public class TextUI {
 					deleteGroup(cmdArgs);
 				break;
 
+				/* add user to group */
+				case CMD_CUSERGRP:
+					addUserToGroup(cmdArgs);
+				break;
+
+				/* delete user from group */
+				case CMD_DUSERGRP:
+					deleteUserFromGroup(cmdArgs);
+				break;
+
 				/* user wants to authenticate w/group server (get token) 
 				 *
 				 * param: user name (String)
@@ -211,8 +232,20 @@ public class TextUI {
 					printHelp(cmdArgs);
 				break;
 			}
+		/* it'd be nice to pass up broken pipe errors so that when the server dies,
+		 * the client doesn't get spammed with exception output
+		 *
+		 * alternative is to remove stack trace prints in the clients
+		 * } catch(java.net.SocketException se) {
+			System.out.println("ERROR: Group Server unavailable!  Connection lost!");
+			printGoodbye();
+			System.exit(-1);*/
 		} catch(Exception e) {
 			System.out.println("ERROR... Input not recognized.  Please try again.");
+
+			// DEBUG ONLY!!!
+			System.out.println("DEBUG: error occurred- "+e);
+			e.printStackTrace();
 		}
 	}
 
@@ -223,6 +256,37 @@ public class TextUI {
 	 * this is where new functions should be added as the command list is expanded
 	 */
 
+	public void addUserToGroup(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a user name and group name");
+		} else {
+			String userName = args[0];
+			String groupName = args[1];
+			
+			if(ensureGroupConnection()) {
+				boolean result = groupClient.addUserToGroup(userName, groupName, loggedInToken);
+				System.out.println("User ["+userName+"] added to group ["+groupName+"]? ["+result+"]");
+			} else {
+				System.out.println("User ["+userName+"] NOT added to group ["+groupName+"].  Group Server not available");
+			}
+		}
+	}
+
+	public void deleteUserFromGroup(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a user name and group name");
+		} else {
+			String userName = args[0];
+			String groupName = args[1];
+			
+			if(ensureGroupConnection()) {
+				boolean result = groupClient.deleteUserFromGroup(userName, groupName, loggedInToken);
+				System.out.println("User ["+userName+"] removed from group ["+groupName+"]? ["+result+"]");
+			} else {
+				System.out.println("User ["+userName+"] NOT removed from group ["+groupName+"].  Group Server not available");
+			}
+		}
+	}
 
 	public void createGroup(String... args) {
 		if(args.length < 1) {
@@ -263,15 +327,28 @@ public class TextUI {
 		} else {
 			String userName = args[0];
 			//System.out.println("DEBUG: cuser input was: "+userName);
-			//
-			// now use userName to create the user and get a token back
-			UserToken userTk = groupClient.getToken(userName);
 
 			if(ensureGroupConnection()) {
-				boolean result = groupClient.createUser(userName, userTk);
+				boolean result = groupClient.createUser(userName, loggedInToken);
 				System.out.println("User created? ["+result+"]");
 			} else {
 				System.out.println("Unable to create user '"+userName+"'.  Group Server not available");
+			}
+		}
+	}
+
+	public void deleteUser(String... args) {
+		if(args.length < 1) {
+			System.out.println("You must supply a user name");
+		} else {
+			String userName = args[0];
+			//System.out.println("DEBUG: duser input was: "+userName);
+
+			if(ensureGroupConnection()) {
+				boolean result = groupClient.deleteUser(userName, loggedInToken);
+				System.out.println("User deleted? ["+result+"]");
+			} else {
+				System.out.println("Unable to delete user '"+userName+"'.  Group Server not available");
 			}
 		}
 	}
@@ -302,7 +379,7 @@ public class TextUI {
 			System.out.println("Could not retrieve file list. File Server not available");
 		}
 	}
-	
+	/*
 	public void listGroups(String... args) {
 		if(ensureGroupConnection()) {
 			List<String> result = fileClient.listFiles(loggedInToken);
@@ -314,6 +391,7 @@ public class TextUI {
 			System.out.println("Could not retrieve group list. Group Server not available");
 		}
 	}
+*/
 	
 	public void listGroupMems(String... args) {
 		if(args.length < 1) {
@@ -323,9 +401,13 @@ public class TextUI {
 		
 			if(ensureGroupConnection()) {
 				List<String> result = groupClient.listMembers(groupName, loggedInToken);
-				for (int i = 0; i < result.size(); i++)
-				{
-					System.out.println(result.get(i));
+				if(result != null && result.size() > 0) {
+					for (int i = 0; i < result.size(); i++)
+					{
+						System.out.println(result.get(i));
+					}
+				} else {
+					System.out.println("There are no members in that group.");
 				}
 			} else {
 				System.out.println("Could not retrieve member list for group '"+groupName+"'.  Group Server not available");
@@ -395,7 +477,7 @@ public class TextUI {
 			System.out.println("\tauth\t Get a token from the group server. Eg: auth alice"); // CMD_AUTH
 			System.out.println("\tcuser\t Create a user. Eg: cuser alice"); // CMD_CUSER
 			System.out.println("\tduser\t Delete a user. Eg: duser alice"); // CMD_DUSER
-			System.out.println("\tlgroups\t List groups."); // CMD_LSTGRP
+			//System.out.println("\tlgroups\t List groups."); // CMD_LSTGRP
 			System.out.println("\tlmembers\t List group members. Eg: lmembers group_one"); // CMD_LSTGRPMEM
 			System.out.println("\tcgroup\t Create a group. Eg: cgroup group_one"); // CMD_CGRP
 			System.out.println("\tdgroup\t Delete a group. Eg: dgroup group_one"); // CMD_DGRP
