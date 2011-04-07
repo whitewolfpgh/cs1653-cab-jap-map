@@ -1,0 +1,42 @@
+FileSharing Usage Information
+
+USAGE:
+ To start Group Server: java RunGroupServer 8765
+ When the group server is first started, there are no users or groups. Since 
+ there must be an administer of the system, the user is prompted via the console
+ to enter a username. This name becomes the first user and is a member of the
+ ADMIN group.  Also, no groups exist.  The group server will by default
+ run on port 8765, but a custom port can be passed as the first command line
+ argument.
+
+ To start the File Server: java RunFileServer 4321
+ The file server will create a shared_files inside the working directory if one 
+ does not exist. The file server is now online.  The file server will by default
+ run on port 4321, but a custom port can be passed as the first command line
+ argument.
+
+ To reset the File server completely, delete FileList.bin and the shared_files 
+ directory.
+ To reset the Group Server, delete UserList.bin.
+
+ To reset both and clear shared files, run ./reinstall.sh
+ 
+ Note that this implementation may or may not support server side directories,
+ but that's solely based on whether or not the provided code also did.
+
+
+ STARTING THE GUI
+
+ run java TextUI
+
+ For help with commands, type 'help' into the TextUI prompt.
+
+ for phase 3, in the TextUI shell, the following commands are relevant:
+
+	 keygen userName (eg: keygen brack) - creates a public/private key pair for userName
+	 *note* in a real world situation, user would provide pub key to server admin before user creation
+	 		in testing, generate a keypair locally, and scp the pubkey to the group server
+
+	 connect [group/file] user@hostname:port  (eg: connect group brack@localhost:1234) - connects to a server
+
+	 auth userName (eg: auth brack) - authenticates user
