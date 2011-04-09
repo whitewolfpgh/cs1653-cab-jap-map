@@ -39,6 +39,8 @@ public interface GroupClientInterface
      *
      */
     public UserToken getToken(final String username);
+    
+    public UserToken getFSToken(final String username, final String fsaddress);
 
 
     /**

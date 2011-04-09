@@ -175,6 +175,54 @@ public class GroupClient extends Client implements GroupClientInterface {
 		
 	 }
 	 
+	  public UserToken getFSToken(String username, String fsaddress)
+	 {
+
+		if(username == null || username.equals("")) {
+			return null;
+		}
+
+		try
+		{
+			UserToken token = null;
+			Envelope message = null, response = null;
+		 		 	
+			//Tell the server to return a token.
+			message = new Envelope("GETFS");
+			message.addObject(username); //Add user name string
+			message.addObject(fsaddress);
+			message.encrypt(sessionSharedKey);
+			output.writeObject(message);
+		
+			//Get the response from the server
+			response = (Envelope)input.readObject();
+			response.decrypt(sessionSharedKey);
+			
+			//Successful response
+			if(response.getMessage().equals("OK"))
+			{
+				//If there is a token in the Envelope, return it 
+				ArrayList<Object> temp = null;
+				temp = response.getObjContents();
+				
+				if(temp.size() == 1)
+				{
+					token = (UserToken)temp.get(0);
+					return token;
+				}
+			}
+			
+			return null;
+		}
+		catch(Exception e)
+		{
+			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace(System.err);
+			return null;
+		}
+		
+	 }
+	 
 	 public boolean createUser(String username, UserToken token)
 	 {
 		 try

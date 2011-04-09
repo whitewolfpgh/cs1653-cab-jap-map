@@ -12,6 +12,7 @@ public class Token implements UserToken, Serializable
 	String mSubject; // name of the subject of the token
 	List<String> mGroups; // list of groups that this token's owner has access to
 	String mSignature; // signature of token
+	String mFSAddress; //target fileserver
 
 	/**
 	 * @return Constructed Token object
@@ -21,6 +22,15 @@ public class Token implements UserToken, Serializable
 		mIssuer  = _groupServerName;
 		mSubject = _userName;
 		mGroups = _userGroups;
+		mSignature = null;
+	}
+	
+	public Token(String _groupServerName, String _userName, List<String> _userGroups, String _fsaddress) {
+
+		mIssuer  = _groupServerName;
+		mSubject = _userName;
+		mGroups = _userGroups;
+		mFSAddress = _fsaddress;
 		mSignature = null;
 	}
 

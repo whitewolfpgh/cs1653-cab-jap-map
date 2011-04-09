@@ -38,6 +38,7 @@ public class TextUI {
 	public static final int CMD_AUTH = 15;
 	public static final int CMD_CONNECT = 16;
 	public static final int CMD_KEYGEN = 17;
+	public static final int CMD_GETFS = 18;
 	
 
 	protected HashMap<String, Integer> commandList;
@@ -45,6 +46,8 @@ public class TextUI {
 	protected FileClient fileClient;
 	protected Scanner userInputScanner;
 	protected UserToken loggedInToken;
+	protected UserToken loggedInFSToken;
+	protected String loggedInFSAddress;
 	protected String loggedInUserName;
 
 	/* create a singleton instance of this class
@@ -60,6 +63,7 @@ public class TextUI {
 			commandList.put("exit", CMD_EXIT);
 			commandList.put("help", CMD_HELP);
 			//commandList.put("auth", CMD_AUTH);
+			commandList.put("getfstoken", CMD_GETFS);
 			commandList.put("connect", CMD_CONNECT);
 			commandList.put("keygen", CMD_KEYGEN);
 
@@ -246,6 +250,15 @@ public class TextUI {
 				case CMD_AUTH:
 					authUser(cmdArgs);
 				break;
+				
+				/* user wants to authenticate w/group server (get token) 
+				 *
+				 * param: user name (String)
+				 */
+				case CMD_GETFS:
+					getFSToken(cmdArgs);
+				break;
+				
 
 				/* user wants to connect to group/file server
 				 *
@@ -450,6 +463,28 @@ public class TextUI {
 			}
 		}
 	}
+	
+	public void getFSToken(String... args) {
+		if(args.length < 1) {
+			System.out.println("you must supply a target server and a user name");
+		} else {
+			String userName = args[0];
+			String fsAddress = args[1];
+			if(groupClient.isConnected()) {
+				loggedInFSToken = groupClient.getFSToken(loggedInUserName, loggedInFSAddress);
+				if(!updateGroupServerToken()) {
+					System.out.println("Can't auth user - bad token");
+					return;
+				}
+
+				System.out.println("Successfully authenticated to Group Server as '"+userName+"'");
+			} else {
+				System.out.println("Unable to get token for user '"+userName+"'.  Group Server not available");
+			}
+		}
+	}
+	
+	
 
 
 	/* connect to a server, name@localhost:1234
@@ -578,7 +613,8 @@ public class TextUI {
 
 						System.out.println("Connecting '"+userName+"' to file server ["+hostAddress+"]:["+port+"]");
 						fileClient.connect(hostAddress, port);
-
+						loggedInFSAddress = hostAddress + port;
+						
 						Certificate fileServerCert = fileClient.getServerIdentity(userName);
 						RSAPublicKey serverPubKey = MyCrypto.readPublicKeyString(fileServerCert.getPublicKey());
 
