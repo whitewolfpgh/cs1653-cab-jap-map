@@ -143,6 +143,35 @@ public class GroupThread extends Thread
 						}
 					}
 				}
+				else if(message.getMessage().equals("GETFS"))//Client wants a FS token
+				{
+					String username = (String)message.getObjContents().get(0); //Get the username
+					String fsaddress = (String)message.getObjContents().get(1); //Get the FS address
+					if(username == null || userAuthenticated != true || userAuthenticatedName == null 
+						|| userAuthenticatedName.equals("") || !userAuthenticatedName.equals(username))
+					{
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						//output.writeObject(response);
+					}
+					else
+					{
+						UserToken yourToken = createToken(username, fsaddress); //Create a token
+						// verify the token's signature
+						if(!validateToken(yourToken)) {
+							System.out.println("New token had _BAD_ signature!!!");
+							response = new Envelope("FAIL");
+							response.addObject(null);
+							//output.writeObject(response);
+						} else {
+							//Respond to the client. On error, the client will receive a null token
+							System.out.println("New token had _GOOD_ signature!!!");
+							response = new Envelope("OK");
+							response.addObject(yourToken);
+							//output.writeObject(response);
+						}
+					}
+				}
 				else if(message.getMessage().equals("CUSER")) //Client wants to create a user
 				{
 					if(message.getObjContents().size() < 2)
@@ -475,6 +504,23 @@ public class GroupThread extends Thread
 		{
 			//Issue a new token with server's name, user's name, and user's groups
 			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username));
+			yourToken.sign(my_gs.getPrivateKey());
+			return yourToken;
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	//Method to create FS tokens
+	private UserToken createToken(String username, String fsaddress) 
+	{
+		//Check that user exists
+		if(my_gs.userList.checkUser(username))
+		{
+			//Issue a new token with server's name, user's name, and user's groups
+			UserToken yourToken = new Token(my_gs.name, username, my_gs.userList.getUserGroups(username), fsaddress);
 			yourToken.sign(my_gs.getPrivateKey());
 			return yourToken;
 		}
