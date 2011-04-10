@@ -22,6 +22,7 @@ public class Token implements UserToken, Serializable
 		mIssuer  = _groupServerName;
 		mSubject = _userName;
 		mGroups = _userGroups;
+		mFSAddress = null;
 		mSignature = null;
 	}
 	
@@ -39,6 +40,13 @@ public class Token implements UserToken, Serializable
      */
     public String getIssuer() {
 		return mIssuer;
+	}
+	
+	 /**
+     * @return The intended server of this FS-specific token (defaults to null for regular tokens)
+     */
+    public String getFSAddress() {
+		return mFSAddress;
 	}
 
 

@@ -714,7 +714,7 @@ public class TextUI {
 				return;
 			}
 
-			List<String> result = fileClient.listFiles(loggedInToken);
+			List<String> result = fileClient.listFiles(loggedInFSToken);
 			for (int i = 0; i < result.size(); i++)
 			{
 				System.out.println(result.get(i));
@@ -726,7 +726,7 @@ public class TextUI {
 	/*
 	public void listGroups(String... args) {
 		if(ensureGroupConnection()) {
-			List<String> result = fileClient.listFiles(loggedInToken);
+			List<String> result = fileClient.listFiles(loggedInFSToken);
 			for (int i = 0; i < result.size(); i++)
 			{
 				System.out.println(result.get(i));
@@ -793,7 +793,7 @@ public class TextUI {
 					return;
 				}
 
-				boolean result = fileClient.delete(fileName, loggedInToken);
+				boolean result = fileClient.delete(fileName, loggedInFSToken);
 				System.out.println("File deleted? [" + result + "]");
 			} else {
 				System.out.println("Could not delete file '"+fileName+"'.  File Server not available");
@@ -817,7 +817,7 @@ public class TextUI {
 
 				loggedInToken.getGroups();
 
-				boolean result = fileClient.upload(sourcePath, destPath, groupName, loggedInToken);
+				boolean result = fileClient.upload(sourcePath, destPath, groupName, loggedInFSToken);
 				System.out.println("File uploaded? [" + result + "]");
 			} else {
 				System.out.println("Could not upload file to'"+groupName+"'.  File Server not available");
@@ -840,7 +840,7 @@ public class TextUI {
 
 				loggedInToken.getGroups();
 
-				boolean result = fileClient.download(sourcePath, destPath, loggedInToken);
+				boolean result = fileClient.download(sourcePath, destPath, loggedInFSToken);
 				System.out.println("File downloaded? [" + result + "]");
 			} else {
 				System.out.println("Could not download file from'"+destPath+"'.  File Server not available");
