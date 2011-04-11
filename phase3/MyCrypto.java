@@ -57,7 +57,7 @@ public class MyCrypto
 		return sessionID;
 	}
 	
-	public static String ourHMAC(){
+	public static void ourHMAC(){
 		
 		String mykey = "secret";
 		String test = "test";
@@ -66,13 +66,17 @@ public class MyCrypto
 		    SecretKeySpec secret = new SecretKeySpec(mykey.getBytes(),"HmacSHA1");
 		    mac.init(secret);
 		    byte[] digest = mac.doFinal(test.getBytes());
-		    String enc = new String(digest);
-		    System.out.println(enc);  
+		    //String enc = new String(digest);
+		    //System.out.println(enc); 
+			for (byte b : digest) {
+				System.out.format("%02x", b);
+			}
+			System.out.println();
 		} catch (Exception e) {
 		    System.out.println(e.getMessage());
 		}
 		
-		return null;
+
 	}
 	
 	public static Hashtable<String, RSAKey> createKeyPair() {
