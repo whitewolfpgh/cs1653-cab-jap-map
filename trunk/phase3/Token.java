@@ -62,9 +62,10 @@ public class Token implements UserToken, Serializable
      * @return The list of group memberships encoded in this token
      */
     public List<String> getGroups() {
+		/* DEBUG
 		for(String s : mGroups) {
 			System.out.println("'"+mSubject+"' group: "+s);
-		}
+		} */
 		return mGroups;
 	}
 

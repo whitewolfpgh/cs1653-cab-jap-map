@@ -3,6 +3,7 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Hashtable;
 import java.io.ObjectInputStream;
 import java.security.*;
 import java.security.Security;
@@ -305,6 +306,40 @@ public class GroupClient extends Client implements GroupClientInterface {
 				return false;
 			}
 	 }
+
+	 @SuppressWarnings("unchecked")
+	 public Hashtable<Integer, String> getGroupKeychain(String groupName, UserToken token) {
+		 try {
+			 Envelope message = null, response = null;
+
+			 message = new Envelope("GETKEYCHAIN");
+			 message.addObject(groupName);
+			 message.addObject(token);
+			 message.encrypt(sessionSharedKey);
+			 output.writeObject(message);
+
+			 response = (Envelope)input.readObject();
+			 response.decrypt(sessionSharedKey);
+
+			 if(response.getMessage().equals("OK")) {
+
+				ArrayList<Object> temp = null;
+				temp = response.getObjContents();
+
+				if(temp.size() == 1) {
+					return (Hashtable<Integer, String>)temp.get(0);
+				} else {
+					return null;
+				}
+			} else {
+				return null;
+			}
+		} catch(Exception e) {
+			System.out.println("Error getting keychain... "+e);
+			e.printStackTrace(); // DEBUG
+			return null;
+		}
+	}
 	 
 	 public boolean createGroup(String groupname, UserToken token)
 	 {

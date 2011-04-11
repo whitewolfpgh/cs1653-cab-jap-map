@@ -1,11 +1,12 @@
 import java.net.Socket;
+import java.io.*;
 
 import java.security.interfaces.*;
 import java.util.Hashtable;
 
 public abstract class Server {
 
-	public static String DEFAULT_CERT_PATH = "certs/";
+	public static String DEFAULT_CERT_PATH = "server_keys/";
 	protected int port;
 	public String name;
 	public Hashtable<String, RSAKey> keyPair;
@@ -14,9 +15,7 @@ public abstract class Server {
 	public Server(int _SERVER_PORT, String _serverName) {
 		port = _SERVER_PORT;
 		name = _serverName; 
-		/* TODO make this more sophisticated so that it will return from disk if already generated
-		 */
-		//keyPair = MyCrypto.createKeyPair();
+
 		try {
 			keyPair = loadKeyPair();
 
@@ -31,6 +30,10 @@ public abstract class Server {
 		}
 	}
 
+	/** load a key pair from disk, or create and save a new pair
+	 *
+	 *
+	 */
 	private Hashtable<String, RSAKey> loadKeyPair() {
 		Hashtable<String, RSAKey> keys = new Hashtable<String, RSAKey>();
 		RSAPublicKey pubKey = null;
@@ -38,8 +41,8 @@ public abstract class Server {
 
 		boolean loadedFromDisk = false;
 		try {
-			pubKey = MyCrypto.readPublicKeyFile("certs/"+name+"_public.key");
-			privKey = MyCrypto.readPrivateKeyFile("certs/"+name+"_private.key");
+			pubKey = MyCrypto.readPublicKeyFile(DEFAULT_CERT_PATH+name+"_public.key");
+			privKey = MyCrypto.readPrivateKeyFile(DEFAULT_CERT_PATH+name+"_private.key");
 			if(pubKey != null && privKey != null) {
 				loadedFromDisk = true;
 			}
@@ -63,11 +66,27 @@ public abstract class Server {
 				return null;
 			}
 
-			boolean pubWritten = MyCrypto.writePublicKeyFile(pubKey, "certs/"+name+"_public.key");
-			boolean privWritten = MyCrypto.writePrivateKeyFile(privKey, "certs/"+name+"_private.key");
-			if(pubWritten && privWritten) {
-				return keys;
+			File f = new File(DEFAULT_CERT_PATH);
+			boolean dirCreated = false;
+
+			if(f.exists()) {
+				dirCreated = true;
 			} else {
+				dirCreated = f.mkdir();
+				System.out.println("Creating server key directory at "+DEFAULT_CERT_PATH);
+			}
+
+			if(dirCreated) {
+				boolean pubWritten = MyCrypto.writePublicKeyFile(pubKey, DEFAULT_CERT_PATH+name+"_public.key");
+				boolean privWritten = MyCrypto.writePrivateKeyFile(privKey, DEFAULT_CERT_PATH+name+"_private.key");
+				if(pubWritten && privWritten) {
+					System.out.println("Generated server public and private keys in "+DEFAULT_CERT_PATH);
+					return keys;
+				} else {
+					return null;
+				}
+			} else {
+				System.out.println("UNABLE TO ACCESS/CREATE DIRECTORY AT "+DEFAULT_CERT_PATH);
 				return null;
 			}
 		}

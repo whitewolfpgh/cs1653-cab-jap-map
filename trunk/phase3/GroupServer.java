@@ -17,18 +17,31 @@ import java.util.*;
 public class GroupServer extends Server {
 
 	public static final int SERVER_PORT = 8765;
-	public static final String CERT_PATH = "certs/";
+	public static final String CERT_PATH = "gs_user_keystore/";
 	public UserList userList;
 	public GroupList groupList;
 	public Hashtable<String, String> challenges;
     
 	public GroupServer() {
 		super(SERVER_PORT, "ALPHA");
+		initKeystore();
 	}
 	
 	public GroupServer(int _port) {
 		super(_port, "ALPHA");
+		initKeystore();
 	}
+
+    private void initKeystore() {
+        File f = new File(CERT_PATH);
+        boolean dirCreated = false;
+
+        if(!f.exists()) {
+            dirCreated = f.mkdir();
+            System.out.println("Creating group server's user keystore directory at "+CERT_PATH+"  ["+dirCreated+"]");
+        }
+    }
+
 
 	public void storeChallenge(String userName, String challenge) {
 		if(userName == null || challenge == null || userName.equals("") || challenge.equals("")) {

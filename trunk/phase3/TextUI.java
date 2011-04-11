@@ -39,6 +39,8 @@ public class TextUI {
 	public static final int CMD_CONNECT = 16;
 	public static final int CMD_KEYGEN = 17;
 	public static final int CMD_GETFS = 18;
+	public static final int CMD_GETKEYCHAIN = 19;
+	public static final int CMD_LOGOUT = 20;
 	
 
 	protected HashMap<String, Integer> commandList;
@@ -49,6 +51,8 @@ public class TextUI {
 	protected UserToken loggedInFSToken;
 	protected String loggedInFSAddress;
 	protected String loggedInUserName;
+	protected Hashtable<Integer, String> loggedInKeychain;
+	protected Hashtable<String, Hashtable<Integer, String>> allKeychains;
 
 	/* create a singleton instance of this class
 	 *
@@ -63,8 +67,10 @@ public class TextUI {
 			commandList.put("exit", CMD_EXIT);
 			commandList.put("help", CMD_HELP);
 			//commandList.put("auth", CMD_AUTH);
+			commandList.put("getkeychain", CMD_GETKEYCHAIN);
 			commandList.put("getfstoken", CMD_GETFS);
 			commandList.put("connect", CMD_CONNECT);
+			commandList.put("logout", CMD_LOGOUT);
 			commandList.put("keygen", CMD_KEYGEN);
 
 			// group thread commands
@@ -86,6 +92,8 @@ public class TextUI {
 			groupClient = new GroupClient();
 			fileClient = new FileClient();
 			loggedInToken = null;
+			loggedInFSToken = null;
+			allKeychains = new Hashtable<String, Hashtable<Integer, String>>();
 
 			that = this;
 		}
@@ -258,6 +266,15 @@ public class TextUI {
 				case CMD_GETFS:
 					getFSToken(cmdArgs);
 				break;
+
+
+				/* user wants to get a keychain for a group
+				 *
+				 * params: group name (String)
+				 */
+				case CMD_GETKEYCHAIN:
+					getGSKeychain(cmdArgs);
+				break;
 				
 
 				/* user wants to connect to group/file server
@@ -266,6 +283,10 @@ public class TextUI {
 				 */
 				case CMD_CONNECT:
 					connectToServer(cmdArgs);
+				break;
+
+				case CMD_LOGOUT:
+					logoutOfServer(cmdArgs);
 				break;
 
 				/* user wants to generate pub/priv key pair
@@ -300,7 +321,7 @@ public class TextUI {
 
 			// DEBUG ONLY!!!
 			//System.out.println("DEBUG: error occurred- "+e);
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 
@@ -484,15 +505,32 @@ public class TextUI {
 		}
 	}
 	
-	
+	public void logoutOfServer(String... args) {
+		if(args.length < 1) {
+			System.out.println("usage: logout [server_type]");
+		} else {
+			String connectType = args[0];
 
+			if(connectType.equals("group")) {
+				loggedInUserName = null;
+				loggedInToken = null;
+				loggedInKeychain = null;
+				allKeychains = null;
+				groupClient.disconnect();
+			} else if(connectType.equals("file")) {
+				loggedInFSAddress = null;
+				loggedInFSToken = null;
+				fileClient.disconnect();
+			}
+		}
+	}
 
 	/* connect to a server, name@localhost:1234
 	 *
 	 */
 	public void connectToServer(String... args) {
 		if(args.length < 2) {
-			System.out.println("you must supply a target server and a user name");
+			System.out.println("usage: connect [server_type] [user]@[host]:[port]");
 		} else {
 			String connectType = args[0];
 			String connectInfo = args[1];
@@ -641,6 +679,31 @@ public class TextUI {
 		}
 	}
 
+	public void getGSKeychain(String... args) {
+		if(args.length < 1) {
+			System.out.println("usage: getkeychain groupName");
+		} else {
+			if(groupClient.isConnected()) {
+				if(!updateGroupServerToken()) {
+					System.out.println("Can't auth user - bad token");
+					return;
+				}
+
+				String groupName = args[0];
+				if(groupName != null && !groupName.equals("")) {
+					loggedInKeychain = groupClient.getGroupKeychain(groupName, loggedInToken);
+					Hashtable<Integer, String> keyChain = groupClient.getGroupKeychain(groupName, loggedInToken);
+					System.out.println("Keychain is: "+keyChain.size());
+					allKeychains.put(groupName, keyChain);
+					System.out.println("Keychain loaded for group '"+groupName+"'");
+					for(int i=1; i <= loggedInKeychain.size(); i++) {
+						System.out.println("DEBUG || key_id["+i+"] keyHex["+loggedInKeychain.get(i)+"]");
+					}
+				}
+			}
+		}
+	}
+
 	public void keygenForUser(String... args) {
 		if(args.length < 1) {
 			System.out.println("usage: keygen userName");
@@ -669,14 +732,23 @@ public class TextUI {
 				if(publicWritten == false || privateWritten == false) {
 					System.out.println("Unable to generate key pair for user '"+userName+"'");
 				} else {
-					System.out.println("Key pair written to client_certs/ for user '"+userName+"'");
+					System.out.println("Key pair written to client_keys/ for user '"+userName+"'");
 				}
 			}
 		}
 	}
 
 	public String getCertPath(String userName) {
-        return "client_certs/"+userName;
+		String keyDir = "client_keys/";
+		File f = new File(keyDir);
+		boolean dirCreated = false;
+
+		if(!f.exists()) {
+			dirCreated = f.mkdir();
+			System.out.println("Creating group keychain directory at "+keyDir+"  ["+dirCreated+"]");
+		}
+
+        return keyDir+userName;
 	}
 
     public String getPublicKeyString(String userName) {
@@ -801,10 +873,33 @@ public class TextUI {
 
 		}
 	}
-	
+
+	public String getLatestGroupKeyString(String groupName) {
+		Hashtable<Integer, String> currKeychain = loggedInKeychain;
+		try {
+			currKeychain = allKeychains.get(groupName);
+			if(currKeychain == null) {
+				System.out.println("Null keychain... did you run 'getkeychain'?");
+			}
+		} catch(Exception e) {
+			System.out.println("Empty keychain... did you run 'getkeychain'?");
+		}
+		//return currKeychain.get(currKeychain.size());
+		return loggedInKeychain.get(loggedInKeychain.size());
+	}
+
+	public SecretKey getLatestGroupKey(String groupName) {
+		return MyCrypto.readDESString(getLatestGroupKeyString(groupName));
+	}
+
+	public int getLatestGroupKeyId(String groupName) {
+		Hashtable<Integer, String> currKeychain = allKeychains.get(groupName);
+		return currKeychain.size();
+	}
+
 	public void uploadFile(String... args) {
 		if(args.length < 3) {
-			System.out.println("you must supply a source, destination and group name");
+			System.out.println("usage: uploadf [local_path] [file_name_on_server] [group_name]");
 		} else {
 			String sourcePath = args[0];
 			String destPath = args[1];
@@ -817,7 +912,21 @@ public class TextUI {
 
 				loggedInToken.getGroups();
 
-				boolean result = fileClient.upload(sourcePath, destPath, groupName, loggedInFSToken);
+
+				System.out.println("locking file "+sourcePath);
+				boolean success = MyCrypto.encryptFile(getLatestGroupKey(groupName), sourcePath);
+				boolean result;
+
+				if(success) {
+					System.out.println("File locked at "+sourcePath+".locked");
+					//result = fileClient.upload(sourcePath+".locked", destPath, groupName, loggedInFSToken);
+					result = fileClient.upload(sourcePath+".locked", destPath, groupName, loggedInToken);
+				} else {
+					System.out.println("COULDN'T LOCK FILE! Aborting.");
+					result = false;
+					return;
+				}
+
 				System.out.println("File uploaded? [" + result + "]");
 			} else {
 				System.out.println("Could not upload file to'"+groupName+"'.  File Server not available");
@@ -827,11 +936,12 @@ public class TextUI {
 	}
 	
 	public void downloadFile(String... args) {
-		if(args.length < 2) {
-			System.out.println("you must supply a source and destination");
+		if(args.length < 3) {
+			System.out.println("usage: downloadf [file_name_on_server] [local_path] [group_name]");
 		} else {
 			String sourcePath = args[0];
 			String destPath = args[1];
+			String groupName = args[2];
 			if(fileClient.isConnected()) {
 				if(!updateGroupServerToken()) {
 					System.out.println("Can't download file - bad token");
@@ -840,8 +950,17 @@ public class TextUI {
 
 				loggedInToken.getGroups();
 
-				boolean result = fileClient.download(sourcePath, destPath, loggedInFSToken);
+				//boolean result = fileClient.download(sourcePath, destPath, loggedInFSToken);
+				boolean result = fileClient.download(sourcePath, destPath, loggedInToken);
 				System.out.println("File downloaded? [" + result + "]");
+
+				boolean success = MyCrypto.decryptFile(getLatestGroupKey(groupName), destPath);
+				System.out.println("File unlocked? [" + success + "]");
+				if(success) {
+					System.out.println("File unlocked at: "+destPath+".unlocked");
+				} else {
+					System.out.println("Could not unlock file at: "+destPath);
+				}
 			} else {
 				System.out.println("Could not download file from'"+destPath+"'.  File Server not available");
 			}
@@ -873,6 +992,7 @@ public class TextUI {
 			System.out.println("\tlfiles\t List files."); // CMD_LSTFILE
 			System.out.println("\tconnect\t Connect to a server. Eg: connect group brack@localhost:1234"); // CMD_LSTFILE
 			System.out.println("\tkeygen\t Generate public/private key pair for user. eg: keygen brack"); // CMD_LSTFILE
+			System.out.println("\tgetkeychain\t Get the most recent keychain for a group. eg: keygen brack"); // CMD_LSTFILE
 
 		} else if(args.length >= 1) {
 			/* if there are additional arguments, print additional help */
@@ -930,6 +1050,8 @@ public class TextUI {
 	}
 
 	public void printGoodbye() {
+		logoutOfServer("group");
+		logoutOfServer("file");
 		System.out.println("Bye!\n");
 	}
 
