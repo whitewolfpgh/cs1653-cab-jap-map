@@ -14,6 +14,7 @@ public class Envelope implements java.io.Serializable {
 	 */
 	private static final long serialVersionUID = -7726335089122193103L;
 	private String msg;
+	private int nonce;
 	private ArrayList<Object> objContents = new ArrayList<Object>();
 	
 	public Envelope(String text)
@@ -24,6 +25,16 @@ public class Envelope implements java.io.Serializable {
 	public String getMessage()
 	{
 		return msg;
+	}
+	
+	public int getNonce()
+	{
+		return nonce;
+	}
+	
+	public void setNonce(int n)
+	{
+		nonce = n;
 	}
 	
 	public ArrayList<Object> getObjContents()
