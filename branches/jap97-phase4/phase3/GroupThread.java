@@ -26,11 +26,14 @@ public class GroupThread extends Thread
 	private SecretKey sessionSharedKey;
 	private boolean userAuthenticated;
 	private String userAuthenticatedName;
+	private int nonce, nonceTemp;
 	
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
 		socket = _socket;
 		my_gs = _gs;
+		nonceTemp = 0;
+		nonce = 1;
 	}
 	
 	public void run()
@@ -73,6 +76,12 @@ public class GroupThread extends Thread
 					}
 				}
 				else if(message.getMessage().equals("GETCHALLENGE")) { // client wants to get challenge
+					
+					//Compute first nonce between client and server
+					int sessionID = MyCrypto.getSessionID().nextInt();
+					nonce = sessionID;
+					System.out.println("New sessionID:"+sessionID);
+					
 					secureCommand = false;
 					String userName = (String)message.getObjContents().get(0);
 					if(userName == null) {
@@ -90,6 +99,21 @@ public class GroupThread extends Thread
 					}
 				}
 				else if(message.getMessage().equals("AUTHENTICATE")) { // client responds with challenge response
+					
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					userAuthenticated = false;
 					userAuthenticatedName = null;
 					String userName = (String)message.getObjContents().get(0);
@@ -117,6 +141,20 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("GET"))//Client wants a token
 				{
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					String username = (String)message.getObjContents().get(0); //Get the username
 					if(username == null || userAuthenticated != true || userAuthenticatedName == null 
 						|| userAuthenticatedName.equals("") || !userAuthenticatedName.equals(username))
@@ -145,6 +183,21 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("GETFS"))//Client wants a FS token
 				{
+					
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					String username = (String)message.getObjContents().get(0); //Get the username
 					String fsaddress = (String)message.getObjContents().get(1); //Get the FS address
 					if(username == null || userAuthenticated != true || userAuthenticatedName == null 
@@ -174,6 +227,20 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("CUSER")) //Client wants to create a user
 				{
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					if(message.getObjContents().size() < 2)
 					{
 						response = new Envelope("FAIL");
@@ -203,6 +270,20 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
 				{
+					
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
 					
 					if(message.getObjContents().size() < 2)
 					{
@@ -243,6 +324,20 @@ public class GroupThread extends Thread
 					 *
 					 * 		oh, also- same goes for users.
 					 */
+					
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
 
 
 					if(message.getObjContents().size() < 2) {
@@ -270,6 +365,19 @@ public class GroupThread extends Thread
 				{
 				    /* TODO:  Write this handler */
 
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
 					
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
@@ -291,6 +399,21 @@ public class GroupThread extends Thread
 				}
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
+					
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
 					} else {
@@ -343,6 +466,20 @@ public class GroupThread extends Thread
 				{
 				    /* TODO:  Write this handler */
 
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
+					
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
 					} else {
@@ -371,6 +508,19 @@ public class GroupThread extends Thread
 
 					/* TODO: add logging on the server side for success & fails on commands */
 
+					//check nonce validity disconnect if fail
+					nonceTemp = message.getNonce();				
+					System.out.println("Received nonce");
+					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
+					
+					if (nonceTemp != (nonce-1)){
+						response = new Envelope("FAIL");
+						response.addObject(null);
+						output.writeObject(response);
+						System.out.println("Closing socket, nonce not equal");
+						socket.close(); //Close the socket
+						proceed = false; //End this communication loop
+					}
 
 					if(message.getObjContents().size() < 2) {
 						response = new Envelope("FAIL");
@@ -412,6 +562,13 @@ public class GroupThread extends Thread
 				if(secureCommand && sessionSharedKey != null && !sessionSharedKey.equals("")) {
 					response.encrypt(sessionSharedKey);
 				}
+				
+				//compute/add n-1 nonce to message
+				System.out.println("Nonce added to message...");
+				nonce = nonce -1;
+				response.setNonce(nonce);
+				System.out.println("New nonce: "+nonce);
+				System.out.println(response.getNonce());
 
 				output.writeObject(response);
 			}while(proceed);	
