@@ -5,6 +5,12 @@
 
 /* This list represents the groups on the server */
 import java.util.*;
+import java.security.*;
+import java.security.Security;
+import java.security.interfaces.*;
+import java.security.spec.*;
+import javax.crypto.*;
+import javax.crypto.spec.*;
 
 	public class GroupList implements java.io.Serializable {
 	
@@ -17,6 +23,7 @@ import java.util.*;
 		public synchronized void addGroup(String groupName, String creator) {
 			Group newGroup = new Group();
 			newGroup.addCreator(creator);
+			newGroup.loadKeychain(groupName);
 			groupList.put(groupName, newGroup);
 			addGroupMember(groupName, creator);
 		}
@@ -45,6 +52,7 @@ import java.util.*;
 		
 			try {
 				groupList.get(groupName).addMember(member);
+				//addNewGroupKey(groupName);
 				return true;
 			} catch(Exception e) {
 				System.out.println("Error occurred adding member to group.");
@@ -62,6 +70,7 @@ import java.util.*;
 			} else {
 				System.out.println("DEBUG || removeMember- removed user ["+userName+"] from group ["+groupName+"]");
 				grp.removeMember(userName);
+				//addNewGroupKey(groupName);
 			}
 		}
 		
@@ -72,6 +81,10 @@ import java.util.*;
 		 */
 		public synchronized ArrayList<String> getGroupMembers(String groupName) {
 			return groupList.get(groupName).getMembers();
+		}
+
+		public synchronized boolean userIsMember(String groupName, String userName) {
+			return groupList.get(groupName).userIsMember(userName);
 		}
 	
 		/* return the creator of the group */
@@ -86,6 +99,38 @@ import java.util.*;
 		public synchronized void demoteCreator(String groupName, String creator) {
 			groupList.get(groupName).removeCreator(creator);
 		}
+
+		public synchronized Hashtable<Integer, String> getGroupKeychain(String groupName) {
+			return groupList.get(groupName).getKeychain();
+		}
+
+		public synchronized boolean addNewGroupKey(String groupName) {
+			Group g = groupList.get(groupName);
+			g.addGroupKey(groupName);
+
+			int keyId = g.getLatestGroupKeyId();
+			String keyHex = g.getLatestGroupKeyString();
+			System.out.println("[GROUPLIST-CREATE-KEY] got key with id ["+keyId+"] and key: \n"+keyHex+"\n");
+
+			if(keyId == 0 || keyHex == null || keyHex.equals("")) {
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		public synchronized SecretKey getCurrentGroupKey(String groupName) {
+			return groupList.get(groupName).getLatestGroupKey();
+		}
+
+		public synchronized String getCurrentGroupKeyString(String groupName) {
+			return groupList.get(groupName).getLatestGroupKeyString();
+		}
+
+		public synchronized int getCurrentGroupKeyId(String groupName) {
+			return groupList.get(groupName).getLatestGroupKeyId();
+		}
+
 		
 
 	class Group implements java.io.Serializable {
@@ -97,15 +142,23 @@ import java.util.*;
 		private ArrayList<String> members; // member users in group
 		private String creatorName; // id of the group creator/owner
 		private String demotedCreatorName; // id of the OLD group creator/owner
+
+		private Hashtable<Integer, String> keychain; // keychain for group, <key_id, key_hex>
 		
 		public Group() {
 			members = new ArrayList<String>();
 			creatorName = null;
 			demotedCreatorName = null;
+			keychain = null;
 		}
 		
 		public ArrayList<String> getMembers() { return members; }
 		public String getCreator() { return creatorName; }
+		public Hashtable<Integer, String> getKeychain() { 
+			System.out.println("keychain looks like: "+keychain.size());
+			System.out.println("key is: "+keychain.get(keychain.size()));
+			return keychain; 
+		}
 		
 		public void addMember(String user) {
 			members.add(user);
@@ -119,6 +172,17 @@ import java.util.*;
 			}
 		}
 
+		public boolean userIsMember(String userName) {
+			if(members.isEmpty() || !members.contains(userName)) {
+				return false;
+			} else if(members.contains(userName)) {
+				return true;
+			}
+
+			return false;
+		}
+
+
 		public void addCreator(String creator) {
 			creatorName = creator;
 		}
@@ -129,7 +193,55 @@ import java.util.*;
 				demotedCreatorName = demotedCreator;
 			}
 		}
-		
+
+		public String generateGroupKey() {
+			return MyCrypto.readDESKeyAsString(MyCrypto.generateDESKey());
+		}
+
+		public String getLatestGroupKeyString() {
+			return keychain.get(keychain.size());
+		}
+
+		public SecretKey getLatestGroupKey() {
+			return MyCrypto.readDESString(getLatestGroupKeyString());
+		}
+
+		public int getLatestGroupKeyId() {
+			return keychain.size();
+		}
+
+		public void loadKeychain(String groupName) {
+			if(!MyCrypto.groupKeychainExists(groupName)) {
+				String newKey = generateGroupKey();
+				boolean added = MyCrypto.addToGroupKeychain(groupName, 1, newKey, false);
+				System.out.println("EASKDHJALSKDJHLSADH");
+
+				if(added) {
+					System.out.println("New group key created for '"+groupName+"'");
+					keychain = new Hashtable<Integer, String>();
+					keychain.put(1, newKey);
+				} else {
+					System.out.println("New group key _NOT_ created for '"+groupName+"'");
+				}
+			} else {
+				keychain = MyCrypto.getGroupSharedKeychain(groupName);
+				System.out.println("Loaded "+keychain.size()+" keys from disk for group '"+groupName+"'");
+			}
+		}
+
+		public void addGroupKey(String groupName) {
+			String newKey = generateGroupKey();
+			int newId = keychain.size()+1;
+			boolean added = MyCrypto.addToGroupKeychain(groupName, newId, newKey, true);
+
+			if(added) {
+				System.out.println("New group key created for '"+groupName+"'");
+				keychain = new Hashtable<Integer, String>();
+				keychain.put(newId, newKey);
+			} else {
+				System.out.println("New group key _NOT_ created for '"+groupName+"'");
+			}
+		}
 	}
 	
 }	

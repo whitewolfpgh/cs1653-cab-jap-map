@@ -27,6 +27,7 @@ public class GroupThread extends Thread
 	private boolean userAuthenticated;
 	private String userAuthenticatedName;
 	private int nonce, nonceTemp;
+	private boolean checkNonce;
 	
 	public GroupThread(Socket _socket, GroupServer _gs)
 	{
@@ -34,6 +35,7 @@ public class GroupThread extends Thread
 		my_gs = _gs;
 		nonceTemp = 0;
 		nonce = 1;
+		checkNonce = false;
 	}
 	
 	public void run()
@@ -66,13 +68,11 @@ public class GroupThread extends Thread
 					if(userName == null) {
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						//output.writeObject(response);
 					} else {
 						Certificate serverCert = getServerCertificate(userName);
 						
 						response = new Envelope("OK");
 						response.addObject(serverCert);
-						//output.writeObject(response);
 					}
 				}
 				else if(message.getMessage().equals("GETCHALLENGE")) { // client wants to get challenge
@@ -87,7 +87,6 @@ public class GroupThread extends Thread
 					if(userName == null) {
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						//output.writeObject(response);
 					} else {
 						String challenge = getUserChallenge(userName); // challenge encrypted with user pub key
 						String sessionKey = getSessionKeyForUser(userName); // session shared key encrypted with user pub key
@@ -95,7 +94,6 @@ public class GroupThread extends Thread
 						response = new Envelope("OK");
 						response.addObject(challenge);
 						response.addObject(sessionKey);
-						//output.writeObject(response);
 					}
 				}
 				else if(message.getMessage().equals("AUTHENTICATE")) { // client responds with challenge response
@@ -105,7 +103,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -121,7 +119,6 @@ public class GroupThread extends Thread
 					if(userName == null || challengeResponse == null) {
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						//output.writeObject(response);
 					} else {
 						boolean challengeOK = verifyUserChallenge(userName, challengeResponse);
 
@@ -130,13 +127,28 @@ public class GroupThread extends Thread
 							userAuthenticated = true;
 							response = new Envelope("OK");
 							response.addObject(challengeOK);
-							//response.encrypt(sessionSharedKey);
-							//output.writeObject(response);
 						} else {
 							response = new Envelope("FAIL");
 							response.addObject(null);
-							//output.writeObject(response);
 						}
+					}
+				}
+				else if(message.getMessage().equals("GETKEYCHAIN"))//Client wants a token
+				{
+					String groupName = (String)message.getObjContents().get(0); //Get the target group
+					UserToken userToken = (UserToken)message.getObjContents().get(1); //Extract the token
+
+					if(message.getObjContents().size() < 2) 
+					{
+						response = new Envelope("FAIL");
+						response.addObject(null);
+					}
+					else
+					{
+						Hashtable<Integer, String> keychain = getKeychainForGroup(groupName, userToken);
+
+						response = new Envelope("OK");
+						response.addObject(keychain);
 					}
 				}
 				else if(message.getMessage().equals("GET"))//Client wants a token
@@ -146,7 +158,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -161,7 +173,6 @@ public class GroupThread extends Thread
 					{
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						//output.writeObject(response);
 					}
 					else
 					{
@@ -171,13 +182,11 @@ public class GroupThread extends Thread
 							System.out.println("New token had _BAD_ signature!!!");
 							response = new Envelope("FAIL");
 							response.addObject(null);
-							//output.writeObject(response);
 						} else {
 							//Respond to the client. On error, the client will receive a null token
 							System.out.println("New token had _GOOD_ signature!!!");
 							response = new Envelope("OK");
 							response.addObject(yourToken);
-							//output.writeObject(response);
 						}
 					}
 				}
@@ -189,7 +198,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -205,7 +214,6 @@ public class GroupThread extends Thread
 					{
 						response = new Envelope("FAIL");
 						response.addObject(null);
-						//output.writeObject(response);
 					}
 					else
 					{
@@ -215,13 +223,11 @@ public class GroupThread extends Thread
 							System.out.println("New token had _BAD_ signature!!!");
 							response = new Envelope("FAIL");
 							response.addObject(null);
-							//output.writeObject(response);
 						} else {
 							//Respond to the client. On error, the client will receive a null token
 							System.out.println("New token had _GOOD_ signature!!!");
 							response = new Envelope("OK");
 							response.addObject(yourToken);
-							//output.writeObject(response);
 						}
 					}
 				}
@@ -232,7 +238,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -266,7 +272,6 @@ public class GroupThread extends Thread
 						}
 					}
 					
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("DUSER")) //Client wants to delete a user
 				{
@@ -276,7 +281,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -309,12 +314,9 @@ public class GroupThread extends Thread
 						}
 					}
 					
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("CGROUP")) //Client wants to create a group
 				{
-				    /* TODO:  Write this handler */
-
 					/* TODO: implement case insensitive groups, so that you can't have users create
 					 * 			malicious imposter groups.  Not as big of a deal with most monospace chars, but
 					 * 			on some systems the difference between a capital i and lowercase l look the same
@@ -330,7 +332,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -359,7 +361,6 @@ public class GroupThread extends Thread
 						}
 					}
 					
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("DGROUP")) //Client wants to delete a group
 				{
@@ -370,7 +371,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -395,7 +396,6 @@ public class GroupThread extends Thread
 						}
 					}
 					
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("LMEMBERS")) //Client wants a list of members in a group
 				{
@@ -405,7 +405,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -430,24 +430,28 @@ public class GroupThread extends Thread
 								System.out.println("DEBUG || gThread::LMEMBERS got groupName ["+groupName+"] and requester ["+requesterToken.getSubject()+"]");
 								// return the list of members
 								try {
-									/* XXX it's possible that this is the cuse for the incorrect list of members
-									 * 		the server reports the right amount of members
-									 */
-									List<String> members = my_gs.groupList.getGroupMembers(groupName);
 									// TODO if requester isn't owner, and isn't in the group, don't show anything!
-									System.out.println("DEBUG || LMEMBERS: group member count for ["+groupName+"] = "+members.size());
-									String memberString = "";
-									for(String s : members) {
-										memberString += s+"||";
-									}
+									if(!my_gs.groupList.userIsMember(groupName, requesterToken.getSubject())) {
+										System.out.println("Not listing members. User '"+requesterToken.getSubject()+"' is not a member of group '"+groupName+"'");
+										response = new Envelope("FAIL");
+										response.addObject(null);
+									} else {
 
-									//System.out.println("HERE'S WHAT THE MEMBER STRING IS: "+memberString);
+										List<String> members = my_gs.groupList.getGroupMembers(groupName);
+										//System.out.println("DEBUG || LMEMBERS: group member count for ["+groupName+"] = "+members.size());
+										String memberString = "";
+										for(String s : members) {
+											memberString += s+"||";
+										}
 
-									if(members.size() > 0) {
-										response = new Envelope("OK");
-										response.addObject(members);
-										response.addObject(memberString);
-										response.addObject(members.size());
+										//System.out.println("HERE'S WHAT THE MEMBER STRING IS: "+memberString);
+
+										if(members.size() > 0) {
+											response = new Envelope("OK");
+											response.addObject(members);
+											response.addObject(memberString);
+											response.addObject(members.size());
+										}
 									}
 								} catch(Exception e) {
 									System.out.println("DEBUG || LMEMBERS: exception- "+e);
@@ -459,19 +463,16 @@ public class GroupThread extends Thread
 						}
 					}
 
-					//output.writeObject(response);
 
 				}
 				else if(message.getMessage().equals("AUSERTOGROUP")) //Client wants to add user to a group
 				{
-				    /* TODO:  Write this handler */
-
 					//check nonce validity disconnect if fail
 					nonceTemp = message.getNonce();				
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -500,7 +501,6 @@ public class GroupThread extends Thread
 						}
 					}
 
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("RUSERFROMGROUP")) //Client wants to remove user from a group
 				{
@@ -513,7 +513,7 @@ public class GroupThread extends Thread
 					System.out.println("Received nonce");
 					System.out.println("Nonce from client:"+nonceTemp+"  Nonce on server:"+nonce);
 					
-					if (nonceTemp != (nonce-1)){
+					if (checkNonce && nonceTemp != (nonce-1)){
 						response = new Envelope("FAIL");
 						response.addObject(null);
 						output.writeObject(response);
@@ -542,17 +542,16 @@ public class GroupThread extends Thread
 						}
 					}
 
-					//output.writeObject(response);
 				}
 				else if(message.getMessage().equals("DISCONNECT")) //Client wants to disconnect
 				{
+					secureCommand = false;
 					socket.close(); //Close the socket
 					proceed = false; //End this communication loop
 				}
 				else
 				{
 					response = new Envelope("FAIL"); //Server does not understand client request
-					//output.writeObject(response);
 				}
 
 				if(response == null) {
@@ -600,7 +599,7 @@ public class GroupThread extends Thread
 	}
 
 	private String getSessionKeyForUser(String userName) {
-		RSAPublicKey userPubKey = my_gs.getUserPublicKey("certs/", userName);
+		RSAPublicKey userPubKey = my_gs.getUserPublicKey(GroupServer.CERT_PATH, userName);
 
 		sessionSharedKey = MyCrypto.generateSecretKey();
 		String plainSessionSecret = MyCrypto.generateSecretKeyString(sessionSharedKey);
@@ -612,10 +611,9 @@ public class GroupThread extends Thread
 
 	private String getUserChallenge(String userName) {
 		int nonce = MyCrypto.getPRNG().nextInt();
-		//String challenge = userName +"||"+ (System.currentTimeMillis()/1000L); // TODO: make this stronger
 		String challenge = ""+nonce;
 
-		RSAPublicKey userPubKey = my_gs.getUserPublicKey("certs/", userName);
+		RSAPublicKey userPubKey = my_gs.getUserPublicKey(GroupServer.CERT_PATH, userName);
 
 		String eChallenge = MyCrypto.encryptString(challenge, userPubKey);
 		my_gs.storeChallenge(userName, challenge);
@@ -646,6 +644,7 @@ public class GroupThread extends Thread
 
 	private boolean validateToken(UserToken tok) {
 		if(tok == null) {
+			System.out.println("User token was blank...");
 			return false;
 		}
 
@@ -687,6 +686,32 @@ public class GroupThread extends Thread
 		}
 	}
 
+	private Hashtable<Integer, String> getKeychainForGroup(String groupName, UserToken userToken) {
+		if(!validateToken(userToken)) {
+			System.out.println("Can't get group keychain. Bad token.");
+			return null;
+		}
+
+		String requester = userToken.getSubject();
+
+		if(my_gs.userList.checkUser(requester)) {
+			if(my_gs.groupList.checkGroup(groupName)) {
+				if(my_gs.groupList.userIsMember(groupName, requester)) {
+					return my_gs.groupList.getGroupKeychain(groupName);
+				} else {
+					System.out.println("User '"+requester+"' is not a member of group '"+groupName+"'");
+					return null;
+				}
+			} else {
+				System.out.println("Group '"+groupName+"' doesn't exist");
+				return null;
+			}
+		} else {
+			System.out.println("User '"+requester+"' doesn't exist");
+			return null;
+		}
+	}
+
 	//Method to create a group
 	private boolean createGroup(String groupName, UserToken yourToken)
 	{
@@ -710,7 +735,7 @@ public class GroupThread extends Thread
 			else {
 				my_gs.groupList.addGroup(groupName, requester); // note: client might want to verify
 																//  that the group was actually created
-				//my_gs.userList.addGroup(requester, groupName); // TODO fix userList
+				my_gs.userList.addGroup(requester, groupName); // TODO fix userList
 				return true;
 			}
 			// else { return false; // requester can't create groups }
@@ -737,7 +762,7 @@ public class GroupThread extends Thread
 				boolean added = my_gs.groupList.addGroupMember(groupName, memberName);
 				System.out.println("DEBUG || addGroupMember- user ["+memberName+"] added to group ["+groupName+"]? ["+added+"]");
 				if(added) {
-					//my_gs.userList.addGroup(memberName, groupName); // TODO fix userList
+					my_gs.userList.addGroup(memberName, groupName); // TODO fix userList
 				}
 				return added;
 			} else {
@@ -763,7 +788,7 @@ public class GroupThread extends Thread
 			&& my_gs.groupList.getGroupOwner(groupName).equals(requester)) { // requester is group owner
 
 			my_gs.groupList.removeMember(groupName, memberName);
-			//my_gs.userList.removeGroup(memberName, groupName); // TODO fix userList
+			my_gs.userList.removeGroup(memberName, groupName); // TODO fix userList
 			// note: check user's group and make sure it was actually removed
 			return true;
 		} else {
@@ -807,7 +832,7 @@ public class GroupThread extends Thread
 
 	public boolean verifyUserKeyStored(String userName) {
 		try {
-			RSAPublicKey userPubKey = my_gs.getUserPublicKey("certs/", userName);
+			RSAPublicKey userPubKey = my_gs.getUserPublicKey(GroupServer.CERT_PATH, userName);
 			if(userPubKey != null) {
 				return true;
 			}

@@ -1,4 +1,4 @@
-import java.util.Hashtable;
+import java.util.*;
 import java.security.*;
 import java.security.Security;
 import java.security.interfaces.*;
@@ -145,10 +145,6 @@ public class MyCrypto
 
 	public static String getSignature(String inString, RSAPrivateKey privKey) {
 		try {
-			/*RSAPrivateKeySpec privSpec = new RSAPrivateKeySpec(privKey.getModulus(), privKey.getPrivateExponent());
-			KeyFactory privKF = KeyFactory.getInstance("RSA", getProvider());
-			PrivateKey privPK = privKF.generatePrivate(privSpec);*/
-
 			// sign using priv key
 			Signature sig = Signature.getInstance("MD5withRSA", getProvider());
 			sig.initSign(privKey);
@@ -172,10 +168,6 @@ public class MyCrypto
 
 	public static boolean verifySignature(String inString, String signature, RSAPublicKey pubKey) {
 		try {
-			/*RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(pubKey.getModulus(), pubKey.getPublicExponent());
-			KeyFactory pubKF = KeyFactory.getInstance("RSA", getProvider());
-			PublicKey pubPK = pubKF.generatePublic(pubSpec);*/
-
 			// verify using pub key
 			Signature verifier = Signature.getInstance("MD5withRSA", getProvider());
 			verifier.initVerify(pubKey);
@@ -183,13 +175,11 @@ public class MyCrypto
 			//verifier.update(unHexify(inString));
 
 			boolean verified = verifier.verify(unHexify(signature));
-			/* DEBUG
-			if(verified) {
-				System.out.println("************** SIGNATURE VERIFIED FOR STRING ***************\n");
-			} else {
+			/* DEBUG*/
+			if(!verified) {
 				System.out.println("************** SIGNATURE _NOT_ VERIFIED FOR STRING ***************\n");
 			}
-			*/
+			/**/
 
 			return verified;
 		} catch(Exception e) {
@@ -454,6 +444,241 @@ public class MyCrypto
 			}
 		} catch(Exception e) {
 			System.out.println("unable to write private key file: "+e);
+			return false;
+		}
+	}
+
+	public static SecretKey generateDESKey() {
+		try {
+			KeyGenerator keygen = KeyGenerator.getInstance("DESede", getProvider());
+			return keygen.generateKey();
+		} catch(Exception e) {
+			System.out.println("Unable to generate DESede key! "+e);
+			e.printStackTrace(); // DEBUG
+		}
+
+		return null;
+	}
+
+	public static String readDESKeyAsString(SecretKey key) {
+		try {
+			SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DESede", getProvider());
+			DESedeKeySpec keySpec = (DESedeKeySpec) keyFactory.getKeySpec(key, DESedeKeySpec.class);
+			byte[] keyBytes = keySpec.getKey();
+
+			return hexify(keyBytes);
+		} catch(Exception e) {
+			System.out.println("Unable to read DES key as string... "+e);
+			e.printStackTrace(); // DEBUG
+			return null;
+		}
+	}
+
+	public static SecretKey readDESString(String keyHex) {
+		try {
+			byte[] keyBytes = unHexify(keyHex);
+			DESedeKeySpec ks = new DESedeKeySpec(keyBytes);
+			SecretKeyFactory kf = SecretKeyFactory.getInstance("DESede", getProvider());
+			SecretKey key = kf.generateSecret(ks);
+
+			return key;
+		} catch(Exception e) {
+			System.out.println("Couldn't read DES key "+keyHex);
+			e.printStackTrace(); // DEBUG
+			return null;
+		}
+	}
+
+	public static boolean groupKeychainExists(String groupName) {
+		try {
+			String keychainPath = "group_keychains/"+groupName+".keychain";
+			File f = new File(keychainPath);
+			return f.exists();
+		} catch(Exception e) {
+			System.out.println("Couldn't determine group keychain existence... "+groupName+" ... "+e);
+			e.printStackTrace(); // DEBUG
+			return false;
+		}
+	}
+
+
+	// group key list: ./group_keys/group_name.keychain
+	public static boolean addToGroupKeychain(String groupName, int key_id, String key, boolean append) {
+		try {
+			String keychainDir = "group_keychains/";
+            File f = new File(keychainDir);
+            boolean dirCreated = false;
+
+            if(f.exists()) {
+                dirCreated = true;
+            } else {
+                dirCreated = f.mkdir();
+                System.out.println("Creating group keychain directory at "+keychainDir);
+            }
+
+            if(dirCreated) {
+				/* use the provdided key string instead of doing a lot of work to re-create key bytes
+				SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DESede", getProvider());
+				DESedeKeySpec keySpec = (DESedeKeySpec) keyFactory.getKeySpec(key, DESedeKeySpec.class);
+				byte[] keyBytes = keySpec.getKey();
+				*/
+
+				String keyPath = keychainDir+groupName+".keychain";
+
+				FileWriter fw = new FileWriter(keyPath);
+				//String keyLine = key_id+"||"+hexify(keyBytes)+"\n";
+				String keyLine = key_id+"||"+key+"\n";
+				fw.write(keyLine);
+				fw.close();
+				/*FileOutputStream out = new FileOutputStream(keyPath, append);
+				out.write(keyBytes);
+				out.close();*/
+
+				File createdFile = new File(keyPath);
+				if(createdFile.exists()) {
+					return true;
+				} else {
+					System.out.println("group keychain file ["+keyPath+"] doesnt exist... failure.");
+					return false;
+				}
+			} else {
+                System.out.println("UNABLE TO CREATE group keychain directory at "+keychainDir);
+				return false;
+			}
+		} catch(Exception e) {
+			System.out.println("Couldn't add to group keychain... "+e);
+			e.printStackTrace(); // DEBUG
+		}
+
+		return false;
+	}
+
+	/** get a group's keychain
+	 *
+	 * note: returns an <int, string> pair, instead of <int, secretkey> because 
+	 * the keys should be converted on demand, instead of having to wait for a giant
+	 * list of keys to be recreated from their string representations
+	 */
+	public static Hashtable<Integer, String> getGroupSharedKeychain(String groupName) {
+		try {
+			String fileName = "group_keychains/"+groupName+".keychain";
+			BufferedReader keyIn = new BufferedReader(new FileReader(fileName));
+
+			String keyLine;
+			Hashtable<Integer, String> retKeychain = new Hashtable<Integer, String>();
+			while((keyLine = keyIn.readLine()) != null) {
+				String[] splitLine = keyLine.split("\\|\\|");
+
+				Integer keyId = 0;
+				String keyHex = "";
+				if(splitLine.length == 2) {
+					keyId = Integer.parseInt(splitLine[0]);
+					keyHex = (String)splitLine[1];
+					retKeychain.put(keyId, keyHex);
+				} else {
+					System.out.println("Bad keychain for '"+groupName+"'");
+					return null;
+				}
+			}
+
+			keyIn.close();
+
+			if(retKeychain.size() > 0) {
+				return retKeychain;
+			} else {
+				System.out.println("Empty keychain for group '"+groupName+"'");
+				return null;
+			}
+		} catch(Exception e) {
+			System.out.println("Unable to get group shared keychain for '"+groupName+"'");
+			e.printStackTrace(); // DEBUG
+			return null;
+		}
+	}
+
+	public static boolean encryptFile(SecretKey key, String filePath) {
+		try {
+
+			File fout = new File(filePath+".locked");
+			File fin = new File(filePath);
+			if(!fin.exists()) {
+				System.out.println("File to encrypt doesn't exist: "+filePath);
+				return false;
+			}
+
+			FileInputStream fis = new FileInputStream(fin);
+			FileOutputStream fos = new FileOutputStream(fout);
+
+			Cipher cipher = Cipher.getInstance("DESede", getProvider());
+			cipher.init(Cipher.ENCRYPT_MODE, key);
+			
+			CipherOutputStream out = new CipherOutputStream(fos, cipher);
+
+			byte[] buffer = new byte[2048];
+			int readBytes;
+			while((readBytes = fis.read(buffer)) != -1) {
+				out.write(buffer, 0, readBytes);
+			}
+			out.close();
+
+			// I've seen this a couple times in security guides - avoids leaving plaintext in memory
+			java.util.Arrays.fill(buffer, (byte)0);
+
+			if(fout.exists()) {
+				System.out.println("Encrypted file written to: "+filePath+".locked");
+				return true;
+			} else {
+				System.out.println("Encrypted file _NOT_ written to: "+filePath+".locked");
+				return false;
+			}
+		} catch(Exception e) {
+			System.out.println("Unable to encrypt file... "+e);
+			e.printStackTrace(); // DEBUG
+			return false;
+		}
+	}
+
+	/** decrypt a file using a secret key
+	 *
+	 * note: filePath must already have '.locked' in the path
+	 */
+	public static boolean decryptFile(SecretKey key, String filePath) {
+		try {
+
+			File fout = new File(filePath+".unlocked");
+			File fin = new File(filePath);
+			if(!fin.exists()) {
+				System.out.println("File to decrypt doesn't exist: "+filePath);
+				return false;
+			}
+
+			FileInputStream fis = new FileInputStream(fin);
+			FileOutputStream fos = new FileOutputStream(fout);
+
+			Cipher cipher = Cipher.getInstance("DESede", getProvider());
+			cipher.init(Cipher.DECRYPT_MODE, key);
+
+			CipherInputStream in = new CipherInputStream(fis, cipher);
+
+			byte[] buffer = new byte[2048];
+			int readBytes;
+			while((readBytes = in.read(buffer)) != -1) {
+				fos.write(buffer, 0, readBytes);
+			}
+			fos.close();
+
+			java.util.Arrays.fill(buffer, (byte)0);
+
+			if(fout.exists()) {
+				System.out.println("Decrypted file written to: "+filePath+".unlocked");
+				return true;
+			} else {
+				System.out.println("Decrypted file _NOT_ written to: "+filePath+".unlocked");
+				return false;
+			}
+		} catch(Exception e) {
+			System.out.println("Unable to decrypt file... "+e);
+			e.printStackTrace(); // DEBUG
 			return false;
 		}
 	}

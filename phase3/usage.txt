@@ -40,3 +40,18 @@ USAGE:
 	 connect [group/file] user@hostname:port  (eg: connect group brack@localhost:1234) - connects to a server
 
 	 auth userName (eg: auth brack) - authenticates user
+
+
+
+
+ *** PHASE 4 ***
+
+ for phase 4, in the TextUI shell, the following procedure is relevant:
+
+ - launch the TextUI client application, and run 'keygen' for whatever admin user was created on the server
+ - copy client_keys/youruser_public.key to gs_user_keys/youruser_public.key
+ - use the 'connect' command to establish a connection with a target server
+ - before uploading files, sync a group keychain using 'getkeychain'
+ - to upload an encrypted file, use the 'uploadf' command
+ - to download an encrypted file and unlock it, use the 'downloadf' command
+
