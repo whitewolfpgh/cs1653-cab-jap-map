@@ -16,6 +16,7 @@ public class MyCrypto
 
 	static Provider PROVIDER_BC = null;
 	static SecureRandom PRNG = null;
+	static SecureRandom sessionID = null;
 
 	public static Provider getProvider() {
 		if(PROVIDER_BC == null) {
@@ -41,6 +42,39 @@ public class MyCrypto
 		return PRNG;
 	}
 
+	public static SecureRandom getSessionID() {
+		try 
+		{
+				getProvider();
+				sessionID = SecureRandom.getInstance("SHA1PRNG");
+				sessionID.nextInt();
+		} catch(Exception e) {
+			System.out.println("[GET-SESSIONID] unable to create SessionID... ");
+			e.printStackTrace(); // DEBUG
+		}
+
+		System.out.println("Generating new sessionID...");
+		return sessionID;
+	}
+	
+	public static String ourHMAC(){
+		
+		String mykey = "secret";
+		String test = "test";
+		try {
+		    Mac mac = Mac.getInstance("HmacSHA1");
+		    SecretKeySpec secret = new SecretKeySpec(mykey.getBytes(),"HmacSHA1");
+		    mac.init(secret);
+		    byte[] digest = mac.doFinal(test.getBytes());
+		    String enc = new String(digest);
+		    System.out.println(enc);  
+		} catch (Exception e) {
+		    System.out.println(e.getMessage());
+		}
+		
+		return null;
+	}
+	
 	public static Hashtable<String, RSAKey> createKeyPair() {
 		Hashtable<String, RSAKey> ret = new Hashtable<String, RSAKey>();
 		// using an RSA-2048 key generator, generate a pair of keys
