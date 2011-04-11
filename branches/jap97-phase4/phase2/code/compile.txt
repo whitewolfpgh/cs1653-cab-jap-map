@@ -1,0 +1,8 @@
+Once inside src/ folder,
+
+COMPILE: javac *.java
+
+or, just run ./build.sh
+
+for a fresh install, run ./reinstall.sh
+

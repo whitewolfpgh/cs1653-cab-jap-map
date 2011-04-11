@@ -1,0 +1,5 @@
+COMPILE javac -cp ".:/afs/cs.pitt.edu/usr0/mehmud/public/bcprov-jdk16-145.jar" *.java
+
+or, just run ./build-unixs.sh
+
+for a fresh install, run ./reinstall.sh
