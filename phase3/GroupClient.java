@@ -12,6 +12,11 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 
 public class GroupClient extends Client implements GroupClientInterface {
+	
+	//set to 1 because initial message is n-1 and server expects 0
+	private int sessionID;
+	private int nonce;
+	
 /*
 	public Certificate getServerIdentity(String userName) {
 		try {
@@ -51,9 +56,18 @@ public class GroupClient extends Client implements GroupClientInterface {
 
 			message = new Envelope("GETCHALLENGE");
 			message.addObject(userName);
+			message.setNonce(nonce);
 			output.writeObject(message);
 
 			response = (Envelope)input.readObject();
+			
+			//read in sessionID from server
+			System.out.println("Getting sessionID from server...");
+			System.out.println(response.getNonce());
+			sessionID = response.getNonce();
+			//This is not getting any value from response!!
+			System.out.println(sessionID);
+			nonce = sessionID;
 
 			if(response.getMessage().equals("OK")) {
 				ArrayList<Object> temp = null;
@@ -100,6 +114,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message.addObject(userName);
 			message.addObject(challengeResponse);
 			message.encrypt(sessionSharedKey);
+			message.setNonce(nonce-1);	
 			output.writeObject(message);
 
 			response = (Envelope)input.readObject();
@@ -144,6 +159,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message = new Envelope("GET");
 			message.addObject(username); //Add user name string
 			message.encrypt(sessionSharedKey);
+			message.setNonce(nonce-1);	
 			output.writeObject(message);
 		
 			//Get the response from the server
@@ -192,6 +208,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			message.addObject(username); //Add user name string
 			message.addObject(fsaddress);
 			message.encrypt(sessionSharedKey);
+			message.setNonce(nonce-1);	
 			output.writeObject(message);
 		
 			//Get the response from the server
@@ -234,6 +251,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(username); //Add user name string
 				message.addObject(token); //Add the requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message);
 			
 				response = (Envelope)input.readObject();
@@ -266,6 +284,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(username); //Add user name
 				message.addObject(token);  //Add requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message);
 			
 				response = (Envelope)input.readObject();
@@ -297,6 +316,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(groupname); //Add the group name string
 				message.addObject(token); //Add the requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message); 
 			
 				response = (Envelope)input.readObject();
@@ -328,6 +348,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(groupname); //Add group name string
 				message.addObject(token); //Add requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message); 
 			
 				response = (Envelope)input.readObject();
@@ -359,6 +380,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 			 message.addObject(group); //Add group name string
 			 message.addObject(token); //Add requester's token
 			 message.encrypt(sessionSharedKey);
+			 message.setNonce(nonce-1);	
 			 output.writeObject(message); 
 			 
 			 response = (Envelope)input.readObject();
@@ -411,6 +433,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(groupname); //Add group name string
 				message.addObject(token); //Add requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message); 
 			
 				response = (Envelope)input.readObject();
@@ -442,6 +465,7 @@ public class GroupClient extends Client implements GroupClientInterface {
 				message.addObject(groupname); //Add group name string
 				message.addObject(token); //Add requester's token
 				message.encrypt(sessionSharedKey);
+				message.setNonce(nonce-1);	
 				output.writeObject(message);
 			
 				response = (Envelope)input.readObject();
