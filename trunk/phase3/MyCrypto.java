@@ -192,7 +192,7 @@ public class MyCrypto
 
 	public static SecretKey generateSecretKey() {
 		try {
-			KeyGenerator keyGen = KeyGenerator.getInstance("AES");//, getProvider());
+			KeyGenerator keyGen = KeyGenerator.getInstance("AES", getProvider());
 			keyGen.init(128);
 
 			// create a secret key spec from the generated key
@@ -203,6 +203,7 @@ public class MyCrypto
 			return secretKey;
 		} catch(Exception e) {
 			System.out.println("Couldn't generate secret key..."+e);
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -219,11 +220,12 @@ public class MyCrypto
 	public static SecretKey readSecretKeyString(String key) {
 		try {
 			SecretKeySpec secretSpec = new SecretKeySpec(unHexify(key), "AES");
-			SecretKeyFactory secretFactory = SecretKeyFactory.getInstance("AES");//, getProvider());
-			SecretKey retSecretKey = secretFactory.generateSecret(secretSpec);
-			return retSecretKey;
+			//SecretKeyFactory secretFactory = SecretKeyFactory.getInstance("AES", getProvider());
+			//SecretKey retSecretKey = secretFactory.generateSecret(secretSpec);
+			return secretSpec;
 		} catch(Exception e) {
 			System.out.println("Couldn't read secret key from string... "+e);
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -237,7 +239,7 @@ public class MyCrypto
 	public static String encryptStringWithSecretKey(String plaintext, SecretKey secretKey) {
 		try {
 			// get AES cipher
-			Cipher cipher = Cipher.getInstance("AES");//, getProvider());
+			Cipher cipher = Cipher.getInstance("AES", getProvider());
 
 			// encrypt the input string using the cipher in encrypt mode
 			cipher.init(Cipher.ENCRYPT_MODE, secretKey);
@@ -251,6 +253,7 @@ public class MyCrypto
 			return encryptedString;
 		} catch(Exception e) {
 			System.out.println("Couldn't encrypt string using secret key... "+e);
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -263,7 +266,7 @@ public class MyCrypto
 	public static String decryptStringWithSecretKey(String ciphertext, SecretKey secretKey) {
 		try {
 			// get AES cipher
-			Cipher cipher = Cipher.getInstance("AES");//, getProvider());
+			Cipher cipher = Cipher.getInstance("AES", getProvider());
 
 			// now decrypt the encrypted bytes using the cipher in decrypt mode
 			cipher.init(Cipher.DECRYPT_MODE, secretKey);
